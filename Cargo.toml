@@ -1,0 +1,16 @@
+[package]
+name = "grok"
+version = "0.1.0"
+authors = ["Michael Nitschinger <michael@nitschinger.at>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/daschl/grok"
+description = """
+A rust implementation of the popular java & ruby grok library
+which allows easy text and log file processing with composable 
+patterns.
+"""
+categories = ["text-processing"]
+
+[dependencies]
+regex = "0.2"
