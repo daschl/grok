@@ -6,6 +6,8 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 
 ## [0.2.0] - (pending)
 
+ * `Grok::new()` has been renamed to `Grok::empty()` (or `Grok::default()`)
+ * `is_empty()` is available in the `Matches` API to check if there are matches at all.
  * `len()` is available in the `Matches` API to get the total number of matches.
 
 ## 0.1.0 - 2017-09-05

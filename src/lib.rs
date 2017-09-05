@@ -33,6 +33,11 @@ impl<'a> Matches<'a> {
     pub fn len(&self) -> usize {
         self.captures.len() - 1
     }
+
+    /// Returns true if there are no matches, false otherwise.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 } 
 
 pub struct Pattern {
@@ -52,7 +57,7 @@ impl Pattern {
 
     /// Matches this compiled `Pattern` against the text and returns the matches.
     pub fn match_against<'a>(&'a self, text: &'a str) -> Option<Matches<'a>> {
-        match self.regex.captures(&text) {
+        match self.regex.captures(text) {
             Some(captures) => Some(Matches::new(captures, &self.alias)),
             None => None,
         }
@@ -65,7 +70,7 @@ pub struct Grok {
 
 impl Grok {
     /// Creates a new `Grok` instance with no patterns.
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Grok {
             definitions: BTreeMap::new(),
         }
@@ -114,10 +119,12 @@ impl Grok {
                     if definition_of_pattern.is_none() {
                         panic!("No definition for key '{}' found, aborting", m.name("pattern").unwrap().as_str());
                     }
-                    let mut replacement = format!("(?P<name{}>{})", index, definition_of_pattern.unwrap());
-                    if named_only && m.name("subname").is_none() {
-                        replacement = format!("(?:{})", definition_of_pattern.unwrap());
-                    }
+
+                    let replacement = if named_only && m.name("subname").is_none() {
+                        format!("(?:{})", definition_of_pattern.unwrap())
+                    } else {
+                        format!("(?P<name{}>{})", index, definition_of_pattern.unwrap())
+                    };
 
                     let name_and_index = format!("name{}", index);
                     if m.name("subname").is_some() {
@@ -140,6 +147,12 @@ impl Grok {
     }
 }
 
+impl Default for Grok {
+    fn default() -> Grok {
+        Grok::empty()
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -147,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_simple_anonymous_pattern() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         let pattern = grok.compile("%{USERNAME}", false);
 
@@ -161,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_simple_named_pattern() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         let pattern = grok.compile("%{USERNAME:usr}", false);
 
@@ -175,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_alias_anonymous_pattern() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
         let pattern = grok.compile("%{USER}", false);
@@ -188,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_ailas_named_pattern() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
         let pattern = grok.compile("%{USER:usr}", false);
@@ -201,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_composite_or_pattern() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
@@ -218,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_multiple_patterns() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("YEAR", r"(\d\d){1,2}");
         grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
         grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
@@ -233,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_named_only() {
-        let mut grok = Grok::new();
+        let mut grok = Grok::default();
         grok.insert_definition("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");

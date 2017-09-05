@@ -4,7 +4,7 @@ use grok::Grok;
 
 fn main() {
     // Instantiate Grok
-    let mut grok = Grok::new();
+    let mut grok = Grok::default();
 
     // Insert a definition which might be a regex or an alias
     grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
