@@ -48,6 +48,12 @@ fn main() {
 }
 ```
 
+Note that compiling the pattern is an expensive operation, so very similar to plain regex handling the `compile`
+operation should be performed once and then the `match_against` method on the pattern can be called repeatedly
+in a loop or iterator. The returned pattern is not bound to the lifteime of the original grok instance so it can
+be passed freely around. For performance reasons the `Match` returned is bound to the pattern lifetime so keep
+them close together or clone/copy out the containing results as needed.
+
 ## License
 `grok` is distributed under the terms of the Apache License (Version 2.0). 
 See LICENSE for details.

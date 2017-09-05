@@ -2,7 +2,7 @@
 //! into a structed result. It is especially helpful when parsing logfiles of all kinds. This
 //! [Rust](http://rust-lang.org) version is mainly a port from the [java version](https://github.com/thekrakken/java-grok)
 //! which in drew inspiration from the original [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
-
+#![doc(html_root_url = "https://docs.rs/grok/0.1.0")]
 extern crate regex;
 
 use regex::{Captures, Regex};
