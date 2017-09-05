@@ -12,5 +12,9 @@ patterns.
 """
 categories = ["text-processing"]
 
+[badges]
+travis-ci = { repository = "daschl/grok" }
+appveyor = { repository = "daschl/grok" }
+
 [dependencies]
 regex = "0.2"
