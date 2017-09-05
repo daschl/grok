@@ -8,7 +8,7 @@ extern crate regex;
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
 
-const GROK_PATTERN: &'static str = r"%\{(?P<name>(?P<pattern>[A-z0-9]+)(?::(?P<subname>[A-z0-9_:;/\s\.]+))?)(?:=(?P<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
+const GROK_PATTERN: &'static str = r"%\{(?P<name>(?P<pattern>[A-z0-9]+)(?::(?P<alias>[A-z0-9_:;/\s\.]+))?)(?:=(?P<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
 
 /// The `Matches` represent matched results from a `Pattern` against text.
 pub struct Matches<'a> {
@@ -23,8 +23,8 @@ impl<'a> Matches<'a> {
     }
 
     /// Gets the value for the name (or) alias if found, `None` otherwise.
-    pub fn get(&self, name: &str) -> Option<&str> {
-        match self.alias.get(name) {
+    pub fn get(&self, name_or_alias: &str) -> Option<&str> {
+        match self.alias.get(name_or_alias) {
             Some(real) => self.captures.name(real).map(|m| m.as_str()),
             None => None,
         }
@@ -82,7 +82,7 @@ impl Grok {
     }
 
     /// Compiles the given pattern, making it ready for matching.
-    pub fn compile(&mut self, pattern: &str, named_only: bool) -> Pattern {
+    pub fn compile(&mut self, pattern: &str, with_alias_only: bool) -> Pattern {
         let mut named_regex = String::from(pattern);
         let original_grok_pattern = pattern;
         let mut alias: BTreeMap<String, String> = BTreeMap::new();
@@ -120,15 +120,15 @@ impl Grok {
                         panic!("No definition for key '{}' found, aborting", m.name("pattern").unwrap().as_str());
                     }
 
-                    let replacement = if named_only && m.name("subname").is_none() {
+                    let replacement = if with_alias_only && m.name("alias").is_none() {
                         format!("(?:{})", definition_of_pattern.unwrap())
                     } else {
                         format!("(?P<name{}>{})", index, definition_of_pattern.unwrap())
                     };
 
                     let name_and_index = format!("name{}", index);
-                    if m.name("subname").is_some() {
-                        alias.insert(m.name("subname").unwrap().as_str().into(), name_and_index);
+                    if m.name("alias").is_some() {
+                        alias.insert(m.name("alias").unwrap().as_str().into(), name_and_index);
                     } else {
                         alias.insert(name.clone(), name_and_index);
                     }
@@ -245,7 +245,7 @@ mod tests {
     }
 
     #[test]
-    fn test_named_only() {
+    fn test_with_alias_only() {
         let mut grok = Grok::default();
         grok.insert_definition("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
