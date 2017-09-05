@@ -5,7 +5,7 @@ The `grok` library allows you to quickly parse and match potentially unstructure
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://travis-ci.org/daschl/grok.svg?branch=master)](https://travis-ci.org/daschl/grok)
 [![Build status](https://ci.appveyor.com/api/projects/status/github/daschl/grok?svg=true)](https://ci.appveyor.com/project/daschl/grok)
-[![crates.io](http://meritbadge.herokuapp.com/grok)](https://crates.io/crates/grok)
+[![Latest Version](https://img.shields.io/crates/v/grok.svg)](https://crates.io/crates/grok)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Documentation](https://docs.rs/grok/badge.svg)](https://docs.rs/grok)
 
