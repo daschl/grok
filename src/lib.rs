@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 
 const GROK_PATTERN: &'static str = r"%\{(?P<name>(?P<pattern>[A-z0-9]+)(?::(?P<subname>[A-z0-9_:;/\s\.]+))?)(?:=(?P<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
 
+/// The `Matches` represent matched results from a `Pattern` against text.
 pub struct Matches<'a> {
     captures: Captures<'a>,
     alias: &'a BTreeMap<String, String>
@@ -40,6 +41,7 @@ impl<'a> Matches<'a> {
     }
 } 
 
+/// The `Pattern` represents a compiled regex, ready to be matched against arbitrary text.
 pub struct Pattern {
     regex: Regex,
     alias: BTreeMap<String, String>,
@@ -57,13 +59,11 @@ impl Pattern {
 
     /// Matches this compiled `Pattern` against the text and returns the matches.
     pub fn match_against<'a>(&'a self, text: &'a str) -> Option<Matches<'a>> {
-        match self.regex.captures(text) {
-            Some(captures) => Some(Matches::new(captures, &self.alias)),
-            None => None,
-        }
+        self.regex.captures(text).map(|cap| Matches::new(cap, &self.alias))
     }
 }
 
+/// The basic structure to manage patterns, entry point for common usage.
 pub struct Grok {
     definitions: BTreeMap<String, String>,
 }
