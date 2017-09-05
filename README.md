@@ -3,12 +3,11 @@ grok
 The `grok` library allows you to quickly parse and match potentially unstructured data into a structed result. It is especially helpful when parsing logfiles of all kinds. This [Rust](http://rust-lang.org) version is mainly a port from the [java version](https://github.com/thekrakken/java-grok) which in drew inspiration from the original [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-(https://ci.appveyor.com/project/daschl/grok)
 [![Latest Version](https://img.shields.io/crates/v/grok.svg)](https://crates.io/crates/grok)
 [![Documentation](https://docs.rs/grok/badge.svg)](https://docs.rs/grok)
 
 [![Build Status](https://travis-ci.org/daschl/grok.svg?branch=master)](https://travis-ci.org/daschl/grok)
-[![Build status](https://ci.appveyor.com/api/projects/status/github/daschl/grok?svg=true)]
+[![Build status](https://ci.appveyor.com/api/projects/status/github/daschl/grok?svg=true)](https://ci.appveyor.com/project/daschl/grok)
 
 ## Usage
 Add this to your `Cargo.toml`:
