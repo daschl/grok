@@ -1,3 +1,8 @@
+//! The `grok` library allows you to quickly parse and match potentially unstructured data
+//! into a structed result. It is especially helpful when parsing logfiles of all kinds. This
+//! [Rust](http://rust-lang.org) version is mainly a port from the [java version](https://github.com/thekrakken/java-grok)
+//! which in drew inspiration from the original [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
+
 extern crate regex;
 
 use regex::{Captures, Regex};
@@ -11,15 +16,22 @@ pub struct Matches<'a> {
 }
 
 impl<'a> Matches<'a> {
+    /// Instantiates the matches for a pattern after the match.
     pub fn new(captures: Captures<'a>, alias: &'a BTreeMap<String, String>) -> Self {
         Matches { captures: captures, alias: alias }
     }
 
+    /// Gets the value for the name (or) alias if found, `None` otherwise.
     pub fn get(&self, name: &str) -> Option<&str> {
         match self.alias.get(name) {
             Some(real) => self.captures.name(real).map(|m| m.as_str()),
             None => None,
-        }        
+        }
+    }
+
+    /// Returns the number of matches.
+    pub fn len(&self) -> usize {
+        self.captures.len() - 1
     }
 } 
 
@@ -29,6 +41,8 @@ pub struct Pattern {
 }
 
 impl Pattern {
+    /// Creates a new pattern from a raw regex string and an alias map to identify the
+    /// fields properly.
     pub fn new(regex: &str, alias: BTreeMap<String, String>) -> Self {
         Pattern {
             regex: Regex::new(regex).expect("Could not compile regex!"),
@@ -36,6 +50,7 @@ impl Pattern {
         }
     }
 
+    /// Matches this compiled `Pattern` against the text and returns the matches.
     pub fn match_against<'a>(&'a self, text: &'a str) -> Option<Matches<'a>> {
         match self.regex.captures(&text) {
             Some(captures) => Some(Matches::new(captures, &self.alias)),
@@ -138,8 +153,10 @@ mod tests {
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("USERNAME").unwrap());
+        assert_eq!(1, matches.len());
         let matches = pattern.match_against("john doe").expect("No matches found!");
         assert_eq!("john", matches.get("USERNAME").unwrap());
+        assert_eq!(1, matches.len());
     }
 
     #[test]
@@ -150,8 +167,10 @@ mod tests {
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("usr").unwrap());
+        assert_eq!(1, matches.len());
         let matches = pattern.match_against("john doe").expect("No matches found!");
         assert_eq!("john", matches.get("usr").unwrap());
+        assert_eq!(1, matches.len());
     }
 
     #[test]
@@ -191,6 +210,7 @@ mod tests {
 
         let matches = pattern.match_against("5E:FF:56:A2:AF:15").expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("MAC").unwrap());
+        assert_eq!(4, matches.len());
         let matches = pattern.match_against("hello! 5E:FF:56:A2:AF:15 what?").expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("MAC").unwrap());
         assert_eq!(true, pattern.match_against("5E:FF").is_none());
@@ -212,12 +232,19 @@ mod tests {
     }
 
     #[test]
-    fn test_named_only_single() {
+    fn test_named_only() {
+        let mut grok = Grok::new();
+        grok.insert_definition("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
+        grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
+        grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
+        grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
+        let pattern = grok.compile("%{MAC:macaddr}", true);
 
-    }
-
-    #[test]
-    fn test_named_only_multi() {
-
+        let matches = pattern.match_against("5E:FF:56:A2:AF:15").expect("No matches found!");
+        assert_eq!("5E:FF:56:A2:AF:15", matches.get("macaddr").unwrap());
+        assert_eq!(1, matches.len());
+        let matches = pattern.match_against("hello! 5E:FF:56:A2:AF:15 what?").expect("No matches found!");
+        assert_eq!("5E:FF:56:A2:AF:15", matches.get("macaddr").unwrap());
+        assert_eq!(true, pattern.match_against("5E:FF").is_none());
     }
 }
