@@ -7,11 +7,14 @@ extern crate regex;
 
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
+use std::fmt;
+use std::error::Error as StdError;
 
 const MAX_RECURSION: usize = 1024;
 const GROK_PATTERN: &'static str = r"%\{(?P<name>(?P<pattern>[A-z0-9]+)(?::(?P<alias>[A-z0-9_:;/\s\.]+))?)(?:=(?P<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
 
 /// The `Matches` represent matched results from a `Pattern` against text.
+#[derive(Debug)]
 pub struct Matches<'a> {
     captures: Captures<'a>,
     alias: &'a BTreeMap<String, String>
@@ -43,6 +46,7 @@ impl<'a> Matches<'a> {
 } 
 
 /// The `Pattern` represents a compiled regex, ready to be matched against arbitrary text.
+#[derive(Debug)]
 pub struct Pattern {
     regex: Regex,
     alias: BTreeMap<String, String>,
@@ -51,10 +55,10 @@ pub struct Pattern {
 impl Pattern {
     /// Creates a new pattern from a raw regex string and an alias map to identify the
     /// fields properly.
-    pub fn new(regex: &str, alias: BTreeMap<String, String>) -> Self {
-        Pattern {
-            regex: Regex::new(regex).expect("Could not compile regex!"),
-            alias: alias,
+    pub fn new(regex: &str, alias: BTreeMap<String, String>) -> Result<Self, Error> {
+        match Regex::new(regex) {
+            Ok(r) => Ok (Pattern { regex: r, alias: alias }),
+            Err(_) => Err(Error::RegexCompilationFailed(regex.into())),
         }
     }
 
@@ -65,6 +69,7 @@ impl Pattern {
 }
 
 /// The basic structure to manage patterns, entry point for common usage.
+#[derive(Debug)]
 pub struct Grok {
     definitions: BTreeMap<String, String>,
 }
@@ -83,31 +88,37 @@ impl Grok {
     }
 
     /// Compiles the given pattern, making it ready for matching.
-    pub fn compile(&mut self, pattern: &str, with_alias_only: bool) -> Pattern {
+    pub fn compile(&mut self, pattern: &str, with_alias_only: bool) -> Result<Pattern, Error> {
         let mut named_regex = String::from(pattern);
-        let original_grok_pattern = pattern;
         let mut alias: BTreeMap<String, String> = BTreeMap::new();
 
         let mut index = 0;
         let mut iteration_left = MAX_RECURSION;
         let mut continue_iteration = true;
 
-        let grok_regex = Regex::new(GROK_PATTERN).unwrap();
+        let grok_regex = match Regex::new(GROK_PATTERN) {
+            Ok(r) => r,
+            Err(_) => return Err(Error::RegexCompilationFailed(GROK_PATTERN.into())),
+        };
+
         while continue_iteration {
             continue_iteration = false;
             if iteration_left <= 0 {
-                panic!(
-                    "Deep recursion pattern compilation of {:?}",
-                    original_grok_pattern
-                );
+                return Err(Error::RecursionTooDeep);
             }
             iteration_left -= 1;
 
             if let Some(m) = grok_regex.captures(&named_regex.clone()) {
                 continue_iteration = true;
-                let raw_pattern = m.name("pattern").unwrap().as_str();
+                let raw_pattern = match m.name("pattern") {
+                    Some(p) => p.as_str(),
+                    None => return Err(Error::GenericCompilationFailure("Could not find pattern in matches".into())),
+                };
 
-                let mut name = String::from(m.name("name").unwrap().as_str());
+                let mut name = match m.name("name") {
+                    Some(n) => String::from(n.as_str()),
+                    None => return Err(Error::GenericCompilationFailure("Could not find name in matches".into())),
+                };
                 if let Some(definition) = m.name("definition") {
                     self.insert_definition(raw_pattern, definition.as_str());
                     name = format!("{}={}", name, definition.as_str());
@@ -122,7 +133,7 @@ impl Grok {
                     // if not.
                     let pattern_definition = match self.definitions.get(raw_pattern) {
                         Some(d) => d,
-                        None => panic!("No definition for key '{}' found, aborting", raw_pattern),
+                        None => return Err(Error::DefinitionNotFound(raw_pattern.into())),
                     };
 
                     // If no alias is specified and all but with alias are ignored, the replacement
@@ -152,16 +163,75 @@ impl Grok {
             }
         }
 
+
         if named_regex.is_empty() {
-            panic!("Pattern not found");
+            Err(Error::CompiledPatternIsEmpty(pattern.into()))
+        } else {
+            Pattern::new(&named_regex, alias)
         }
-        Pattern::new(&named_regex, alias)
     }
 }
 
 impl Default for Grok {
     fn default() -> Grok {
         Grok::empty()
+    }
+}
+
+/// An error that occurred when using this library.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Error {
+    /// The recursion while compiling has exhausted the limit.
+    RecursionTooDeep,
+    /// After compiling, the resulting compiled regex pattern is empty.
+    CompiledPatternIsEmpty(String),
+    /// A corresponding pattern definition could not be found for the given name.
+    DefinitionNotFound(String),
+    /// If the compilation for a specific regex in the underlying engine failed.
+    RegexCompilationFailed(String),
+    /// Something is messed up during the compilation phase.
+    GenericCompilationFailure(String),
+    /// Hints that destructuring should not be exhaustive.
+    ///
+    /// This enum may grow additional variants, so this makes sure clients
+    /// don't count on exhaustive matching. (Otherwise, adding a new variant
+    /// could break existing code.)
+    #[doc(hidden)]
+    __Nonexhaustive,
+}
+
+impl StdError for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::RecursionTooDeep => "compilation recursion reached the limit",
+            Error::CompiledPatternIsEmpty(_) => "compiled pattern is empty",
+            Error::DefinitionNotFound(_) => "pattern definition not found while compiling",
+            Error::RegexCompilationFailed(_) => "regex compilation in the engine failed",
+            Error::GenericCompilationFailure(_) => "something happened during the compilation phase",
+            Error::__Nonexhaustive => unreachable!(),
+        }
+    }
+
+    fn cause(&self) -> Option<&StdError> {
+        None
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::RecursionTooDeep => 
+                write!(f, "Recursion while compiling reached the limit of {}", MAX_RECURSION),
+            Error::CompiledPatternIsEmpty(ref p) => 
+                write!(f, "The given pattern \"{}\" ended up compiling into an empty regex", p),
+            Error::DefinitionNotFound(ref d) => 
+                write!(f, "The given pattern definition name \"{}\" could not be found in the definition map", d),
+            Error::RegexCompilationFailed(ref r) => 
+                write!(f, "The given regex \"{}\" failed compilation in the underlying engine", r),
+            Error::GenericCompilationFailure(ref d) =>
+                write!(f, "Something unexpected happened during the compilation phase: \"{}\"", d),
+            Error::__Nonexhaustive => unreachable!(),
+        }
     }
 }
 
@@ -174,7 +244,7 @@ mod tests {
     fn test_simple_anonymous_pattern() {
         let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        let pattern = grok.compile("%{USERNAME}", false);
+        let pattern = grok.compile("%{USERNAME}", false).expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("USERNAME").unwrap());
@@ -188,7 +258,7 @@ mod tests {
     fn test_simple_named_pattern() {
         let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        let pattern = grok.compile("%{USERNAME:usr}", false);
+        let pattern = grok.compile("%{USERNAME:usr}", false).expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("usr").unwrap());
@@ -203,7 +273,7 @@ mod tests {
         let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
-        let pattern = grok.compile("%{USER}", false);
+        let pattern = grok.compile("%{USER}", false).expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("USER").unwrap());
@@ -216,7 +286,7 @@ mod tests {
         let mut grok = Grok::default();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
-        let pattern = grok.compile("%{USER:usr}", false);
+        let pattern = grok.compile("%{USER:usr}", false).expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("usr").unwrap());
@@ -231,7 +301,7 @@ mod tests {
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
         grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
-        let pattern = grok.compile("%{MAC}", false);
+        let pattern = grok.compile("%{MAC}", false).expect("Error while compiling!");
 
         let matches = pattern.match_against("5E:FF:56:A2:AF:15").expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("MAC").unwrap());
@@ -247,7 +317,7 @@ mod tests {
         grok.insert_definition("YEAR", r"(\d\d){1,2}");
         grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
         grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
-        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false);
+        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false).expect("Error while compiling!");
 
         let matches = pattern.match_against("Monday March 2012").expect("No matches found!");
         assert_eq!("Monday", matches.get("DAY").unwrap());
@@ -263,7 +333,7 @@ mod tests {
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
         grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
-        let pattern = grok.compile("%{MAC:macaddr}", true);
+        let pattern = grok.compile("%{MAC:macaddr}", true).expect("Error while compiling!");
 
         let matches = pattern.match_against("5E:FF:56:A2:AF:15").expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("macaddr").unwrap());
