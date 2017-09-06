@@ -8,6 +8,7 @@ extern crate regex;
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
 
+const MAX_RECURSION: usize = 1024;
 const GROK_PATTERN: &'static str = r"%\{(?P<name>(?P<pattern>[A-z0-9]+)(?::(?P<alias>[A-z0-9_:;/\s\.]+))?)(?:=(?P<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
 
 /// The `Matches` represent matched results from a `Pattern` against text.
@@ -88,7 +89,7 @@ impl Grok {
         let mut alias: BTreeMap<String, String> = BTreeMap::new();
 
         let mut index = 0;
-        let mut iteration_left = 1000;
+        let mut iteration_left = MAX_RECURSION;
         let mut continue_iteration = true;
 
         let grok_regex = Regex::new(GROK_PATTERN).unwrap();
@@ -102,39 +103,50 @@ impl Grok {
             }
             iteration_left -= 1;
 
-            let capture = named_regex.clone();
-            if let Some(m) = grok_regex.captures(&capture) {
+            if let Some(m) = grok_regex.captures(&named_regex.clone()) {
                 continue_iteration = true;
-            
+                let raw_pattern = m.name("pattern").unwrap().as_str();
+
                 let mut name = String::from(m.name("name").unwrap().as_str());
                 if let Some(definition) = m.name("definition") {
-                    self.insert_definition(m.name("pattern").unwrap().as_str(), definition.as_str());
+                    self.insert_definition(raw_pattern, definition.as_str());
                     name = format!("{}={}", name, definition.as_str());
                 }
 
-                let n = format!("%{{{}}}", name);
-                let count = named_regex.matches(&n).count();
-                for _ in 0..count {
-                    let definition_of_pattern = self.definitions.get(m.name("pattern").unwrap().as_str());
-                    if definition_of_pattern.is_none() {
-                        panic!("No definition for key '{}' found, aborting", m.name("pattern").unwrap().as_str());
-                    }
+                // Since a pattern with a given name can show up more than once, we need to
+                // loop through the number of matches found and apply the transformations
+                // on each of them.
+                for _ in 0..named_regex.matches(&format!("%{{{}}}", name)).count() {
 
-                    let replacement = if with_alias_only && m.name("alias").is_none() {
-                        format!("(?:{})", definition_of_pattern.unwrap())
-                    } else {
-                        format!("(?P<name{}>{})", index, definition_of_pattern.unwrap())
+                    // Check if we have a definition for the raw pattern key and fail quickly
+                    // if not.
+                    let pattern_definition = match self.definitions.get(raw_pattern) {
+                        Some(d) => d,
+                        None => panic!("No definition for key '{}' found, aborting", raw_pattern),
                     };
 
-                    let name_and_index = format!("name{}", index);
-                    if m.name("alias").is_some() {
-                        alias.insert(m.name("alias").unwrap().as_str().into(), name_and_index);
+                    // If no alias is specified and all but with alias are ignored, the replacement
+                    // tells the regex engine to ignore the matches. Otherwise, the definition is
+                    // turned into a regex that the engine understands and uses a named group.
+                    let replacement = if with_alias_only && m.name("alias").is_none() {
+                        format!("(?:{})", pattern_definition)
                     } else {
-                        alias.insert(name.clone(), name_and_index);
-                    }
+                        format!("(?P<name{}>{})", index, pattern_definition)
+                    };
 
-                    let search_string = format!("%{{{}}}", name);
-                    named_regex = named_regex.replacen(&search_string, &replacement, 1);
+                    // If an alias is specified by the user use that one to match the name<index>
+                    // conversion, oterhwise just use the name of the pattern definition directly.
+                    alias.insert(match m.name("alias") {
+                        Some(a) => a.as_str().into(),
+                        None => name.clone(),
+                    }, format!("name{}", index));
+
+
+                    // Finally, look for the original %{...} style pattern and replace it
+                    // with our replacement (only the first occurence since we are iterating
+                    // one by one).
+                    named_regex = named_regex.replacen(&format!("%{{{}}}", name), &replacement, 1);
+
                     index += 1;
                 }
             }
