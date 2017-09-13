@@ -2,13 +2,14 @@
 //! into a structed result. It is especially helpful when parsing logfiles of all kinds. This
 //! [Rust](http://rust-lang.org) version is mainly a port from the [java version](https://github.com/thekrakken/java-grok)
 //! which in drew inspiration from the original [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
-#![doc(html_root_url = "https://docs.rs/grok/0.2.0")]
+#![doc(html_root_url = "https://docs.rs/grok/0.3.0")]
 extern crate regex;
 
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::error::Error as StdError;
+use std::collections::btree_map::Iter as BTreeIter;
 
 const MAX_RECURSION: usize = 1024;
 const GROK_PATTERN: &'static str = r"%\{(?P<name>(?P<pattern>[A-z0-9]+)(?::(?P<alias>[A-z0-9_:;/\s\.]+))?)(?:=(?P<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
@@ -43,7 +44,36 @@ impl<'a> Matches<'a> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// Returns a tuple of key/value with all the matches found.
+    ///
+    /// note that if no match is found, the value is empty.
+    pub fn iter(&'a self) -> MatchesIter<'a> {
+        MatchesIter { captures: &self.captures, alias: self.alias.iter() }
+    }
 } 
+
+
+pub struct MatchesIter<'a> {
+    captures: &'a Captures<'a>,
+    alias: BTreeIter<'a, String, String>,
+}
+
+impl<'a> Iterator for MatchesIter<'a> {
+    type Item = (&'a str, &'a str);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.alias.next().map(|(k, v)| {
+            let key = k.as_str();
+            let m_name = v.as_str();
+            let value = match self.captures.name(m_name) {
+                Some(v) => v.as_str(),
+                None => "",
+            };
+            (key, value)
+        })
+    }
+}
 
 /// The `Pattern` represents a compiled regex, ready to be matched against arbitrary text.
 #[derive(Debug)]
@@ -341,5 +371,28 @@ mod tests {
         let matches = pattern.match_against("hello! 5E:FF:56:A2:AF:15 what?").expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("macaddr").unwrap());
         assert_eq!(true, pattern.match_against("5E:FF").is_none());
+    }
+
+    #[test]
+    fn test_match_iterator() {
+        let mut grok = Grok::default();
+        grok.insert_definition("YEAR", r"(\d\d){1,2}");
+        grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
+        grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
+        grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
+
+        let pattern = grok.compile("%{DAY} %{MONTH:month} %{YEAR}", false).expect("Error while compiling!");
+        let matches = pattern.match_against("Monday March 2012").expect("No matches found!");
+        let mut found = 0;
+        for (k, v) in matches.iter() {
+            match k {
+                "DAY" => assert_eq!("Monday", v),
+                "month" => assert_eq!("March", v),
+                "YEAR" => assert_eq!("2012", v),
+                _ => assert!(false),
+            }
+            found += 1;
+        }
+        assert_eq!(3, found);
     }
 }
