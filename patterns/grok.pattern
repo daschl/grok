@@ -3,7 +3,7 @@ USER %{USERNAME}
 EMAILLOCALPART [a-zA-Z][a-zA-Z0-9_.+-=:]+
 EMAILADDRESS %{EMAILLOCALPART}@%{HOSTNAME}
 INT (?:[+-]?(?:[0-9]+))
-BASE10NUM (?<![0-9.+-])([+-]?(?:(?:[0-9]+(?:\.[0-9]+)?)|(?:\.[0-9]+)))
+BASE10NUM (?<![0-9.+-])(?>[+-]?(?:(?:[0-9]+(?:\.[0-9]+)?)|(?:\.[0-9]+)))
 NUMBER (?:%{BASE10NUM})
 BASE16NUM (?<![0-9A-Fa-f])(?:[+-]?(?:0x)?(?:[0-9A-Fa-f]+))
 BASE16FLOAT \b(?<![0-9A-Fa-f.])(?:[+-]?(?:0x)?(?:(?:[0-9A-Fa-f]+(?:\.[0-9A-Fa-f]*)?)|(?:\.[0-9A-Fa-f]+)))\b
@@ -15,7 +15,7 @@ NOTSPACE \S+
 SPACE \s*
 DATA .*?
 GREEDYDATA .*
-QUOTEDSTRING ((?<!\\)("(\\.|[^\\"]+)+"|""|('(\\.|[^\\']+)+')|''|(`(\\.|[^\\`]+)+`)|``))
+QUOTEDSTRING (?>(?<!\\)(?>"(?>\\.|[^\\"]+)+"|""|(?>'(?>\\.|[^\\']+)+')|''|(?>`(?>\\.|[^\\`]+)+`)|``))
 UUID [A-Fa-f0-9]{8}-(?:[A-Fa-f0-9]{4}-){3}[A-Fa-f0-9]{12}
 # URN, allowing use of RFC 2141 section 2.3 reserved characters
 URN urn:[0-9A-Za-z][0-9A-Za-z-]{0,31}:(?:%[0-9a-fA-F]{2}|[0-9A-Za-z()+,.:=@;$_!*'/?#-])+
@@ -36,7 +36,7 @@ HOSTPORT %{IPORHOST}:%{POSINT}
 PATH (?:%{UNIXPATH}|%{WINPATH})
 UNIXPATH (/([\w_%!$@:.,+~-]+|\\.)*)+
 TTY (?:/dev/(pts|tty([pq])?)(\w+)?/?(?:[0-9]+))
-WINPATH ([A-Za-z]+:|\\)(?:\\[^\\?*]*)+
+WINPATH (?>[A-Za-z]+:|\\)(?:\\[^\\?*]*)+
 URIPROTO [A-Za-z]([A-Za-z0-9+\-.]+)+
 URIHOST %{IPORHOST}(?::%{POSINT:port})?
 # uripath comes loosely from RFC1738, but mostly from what Firefox
@@ -57,7 +57,7 @@ MONTHDAY (?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9])
 DAY (?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)
 
 # Years?
-YEAR (\d\d){1,2}
+YEAR (?>\d\d){1,2}
 HOUR (?:2[0123]|[01]?[0-9])
 MINUTE (?:[0-5][0-9])
 # '60' is a leap second in most time standards and thus is valid.

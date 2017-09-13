@@ -6,6 +6,7 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 
 ## [0.3.0] - (pending)
 
+ * `regex` has been switched to `onig` so we have full compatibility with all the other grok patterns.
  * Added `Grok::with_patterns()` which loads all the default patterns. `Grok::defalt()` also uses that now.
  * `iter()` is available on `Matches` which yields a `(&str, &str)` kv pair of match/result.
 
