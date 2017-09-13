@@ -6,6 +6,9 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 
 ## [0.3.0] - (pending)
 
+ * Added `Grok::with_patterns()` which loads all the default patterns. `Grok::defalt()` also uses that now.
+ * `iter()` is available on `Matches` which yields a `(&str, &str)` kv pair of match/result.
+
 ## [0.2.0] - 2017-09-06
 
  * Instead of panicing, all methods that could return a `Result<T, grok::Error>`.
