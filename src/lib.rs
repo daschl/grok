@@ -8,25 +8,31 @@ extern crate onig;
 mod patterns;
 
 use onig::{Captures, Regex};
-use std::collections::BTreeMap;
+use std::collections::{HashMap, BTreeMap};
 use std::fmt;
 use std::error::Error as StdError;
-use std::collections::btree_map::Iter as BTreeIter;
+use std::collections::hash_map::Iter as MapIter;
+use std::iter::FromIterator;
 
 const MAX_RECURSION: usize = 1024;
+
 const GROK_PATTERN: &'static str = r"%\{(?<name>(?<pattern>[A-z0-9]+)(?::(?<alias>[A-z0-9_:;\/\s\.]+))?)(?:=(?<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
+const NAME_INDEX: usize = 1;
+const PATTERN_INDEX: usize = 2;
+const ALIAS_INDEX: usize = 3;
+const DEFINITION_INDEX: usize = 4;
 
 /// The `Matches` represent matched results from a `Pattern` against text.
 #[derive(Debug)]
 pub struct Matches<'a> {
     captures: Captures<'a>,
-    alias: &'a BTreeMap<String, String>,
-    names: &'a Vec<(String, u32)>,
+    alias: &'a HashMap<String, String>,
+    names: &'a HashMap<String, u32>,
 }
 
 impl<'a> Matches<'a> {
     /// Instantiates the matches for a pattern after the match.
-    pub fn new(captures: Captures<'a>, alias: &'a BTreeMap<String, String>, names: &'a Vec<(String, u32)>) -> Self {
+    pub fn new(captures: Captures<'a>, alias: &'a HashMap<String, String>, names: &'a HashMap<String, u32>) -> Self {
         Matches { captures: captures, alias: alias, names: names }
     }
 
@@ -34,9 +40,7 @@ impl<'a> Matches<'a> {
     pub fn get(&self, name_or_alias: &str) -> Option<&str> {
         match self.alias.get(name_or_alias) {
             Some(real) => {
-                // TODO: make me more performant in a real hashmap
-                let idx = self.names.iter().find(|n| n.0 == real.as_ref()).unwrap();
-                self.captures.at(idx.1 as usize) 
+                self.captures.at(*self.names.get(real).unwrap() as usize)
             },
             None => None,
         }
@@ -62,8 +66,8 @@ impl<'a> Matches<'a> {
 
 pub struct MatchesIter<'a> {
     captures: &'a Captures<'a>,
-    alias: BTreeIter<'a, String, String>,
-    names: &'a Vec<(String, u32)>,
+    alias: MapIter<'a, String, String>,
+    names: &'a HashMap<String, u32>,
 }
 
 impl<'a> Iterator for MatchesIter<'a> {
@@ -72,8 +76,7 @@ impl<'a> Iterator for MatchesIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.alias.next().map(|(k, v)| {
             let key = k.as_str();
-            let idx = self.names.iter().find(|n| n.0 == v.as_ref()).unwrap();
-            let value = match self.captures.at(idx.1 as usize) {
+            let value = match self.captures.at(*self.names.get(v).unwrap() as usize) {
                 Some(v) => v,
                 None => "",
             };
@@ -86,17 +89,17 @@ impl<'a> Iterator for MatchesIter<'a> {
 #[derive(Debug)]
 pub struct Pattern {
     regex: Regex,
-    alias: BTreeMap<String, String>,
-    names: Vec<(String, u32)>,
+    alias: HashMap<String, String>,
+    names: HashMap<String, u32>,
 }
 
 impl Pattern {
     /// Creates a new pattern from a raw regex string and an alias map to identify the
     /// fields properly.
-    pub fn new(regex: &str, alias: BTreeMap<String, String>) -> Result<Self, Error> {
+    pub fn new(regex: &str, alias: HashMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
-                let names = r.capture_names().map(|(name, idx)| (String::from(name), idx[0])).collect();
+                let names = HashMap::from_iter(r.capture_names().map(|(name, idx)| (String::from(name), idx[0])));
                 Pattern { regex: r, alias: alias, names: names }
                 
             }),
@@ -141,7 +144,7 @@ impl Grok {
     /// Compiles the given pattern, making it ready for matching.
     pub fn compile(&mut self, pattern: &str, with_alias_only: bool) -> Result<Pattern, Error> {
         let mut named_regex = String::from(pattern);
-        let mut alias: BTreeMap<String, String> = BTreeMap::new();
+        let mut alias: HashMap<String, String> = HashMap::new();
 
         let mut index = 0;
         let mut iteration_left = MAX_RECURSION;
@@ -161,20 +164,17 @@ impl Grok {
 
             if let Some(m) = grok_regex.captures(&named_regex.clone()) {
                 continue_iteration = true;
-                // XXX pattern
-                let raw_pattern = match m.at(2) {
+                let raw_pattern = match m.at(PATTERN_INDEX) {
                     Some(p) => p,
                     None => return Err(Error::GenericCompilationFailure("Could not find pattern in matches".into())),
                 };
 
-                // XXX name
-                let mut name = match m.at(1) {
+                let mut name = match m.at(NAME_INDEX) {
                     Some(n) => String::from(n),
                     None => return Err(Error::GenericCompilationFailure("Could not find name in matches".into())),
                 };
 
-                // XXX definition
-                if let Some(definition) = m.at(4) {
+                if let Some(definition) = m.at(DEFINITION_INDEX) {
                     self.insert_definition(raw_pattern, definition);
                     name = format!("{}={}", name, definition);
                 }
@@ -195,13 +195,12 @@ impl Grok {
                     // tells the regex engine to ignore the matches. Otherwise, the definition is
                     // turned into a regex that the engine understands and uses a named group.
 
-                    // XXXX alias
-                    let replacement = if with_alias_only && m.at(3).is_none() {
+                    let replacement = if with_alias_only && m.at(ALIAS_INDEX).is_none() {
                         format!("(?:{})", pattern_definition)
                     } else {
                         // If an alias is specified by the user use that one to match the name<index>
                         // conversion, oterhwise just use the name of the pattern definition directly.
-                        alias.insert(match m.at(3) {
+                        alias.insert(match m.at(ALIAS_INDEX) {
                             Some(a) => a.into(),
                             None => name.clone(),
                         }, format!("name{}", index));
@@ -439,9 +438,12 @@ mod tests {
     #[test]
     fn test_compilation_of_all_default_patterns() {
         let mut grok = Grok::default();
+        let mut num_checked = 0;
         for &(key, _) in patterns::PATTERNS {
             let pattern = format!("%{{{}}}", key);
             grok.compile(&pattern, false).expect(&format!("Pattern {} key {} failed to compile!", pattern, key));
+            num_checked += 1;
         }
+        assert!(num_checked > 0);
     }
 }
