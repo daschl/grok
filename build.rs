@@ -10,7 +10,10 @@ fn main() {
 
     let mut output = String::new();
 
-    fmt::write(&mut output, format_args!("pub static PATTERNS: &[(&'static str, &'static str)] = &[\n")).unwrap();
+    fmt::write(
+        &mut output,
+        format_args!("pub static PATTERNS: &[(&'static str, &'static str)] = &[\n"),
+    ).unwrap();
 
 
     for line in glob("patterns/*.pattern").unwrap() // load filepaths
@@ -27,7 +30,10 @@ fn main() {
         .filter(|line| !line.is_empty())
     {
         let (key, value) = line.split_at(line.find(" ").unwrap());
-        fmt::write(&mut output, format_args!("\t(\"{}\", r#\"{}\"#),\n", key, &value[1..])).unwrap();
+        fmt::write(
+            &mut output,
+            format_args!("\t(\"{}\", r#\"{}\"#),\n", key, &value[1..]),
+        ).unwrap();
     }
 
     fmt::write(&mut output, format_args!("];\n")).unwrap();
