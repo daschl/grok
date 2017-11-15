@@ -14,7 +14,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-grok = "0.3"
+grok = "0.4"
 ```
 
 and this to your crate root:
