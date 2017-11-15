@@ -4,6 +4,10 @@ All user visible changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/), as described
 for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/text/1105-api-evolution.md)
 
+## [0.4.1] - 2017-11-15
+
+ * Fixed a bug where the named pattern on compilation is also accessible from the iterator.
+
 ## [0.4.0] - 2017-11-15
 
  * Allow to specify named patterns when compiling, without inserting the definition beforehand.
@@ -25,6 +29,7 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 
  * Initial Release
 
+[0.4.1]: https://github.com/daschl/grok/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/daschl/grok/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/daschl/grok/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/daschl/grok/compare/v0.1.0...v0.2.0
