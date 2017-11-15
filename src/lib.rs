@@ -1,7 +1,9 @@
 //! The `grok` library allows you to quickly parse and match potentially unstructured data
 //! into a structed result. It is especially helpful when parsing logfiles of all kinds. This
-//! [Rust](http://rust-lang.org) version is mainly a port from the [java version](https://github.com/thekrakken/java-grok)
-//! which in drew inspiration from the original [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
+//! [Rust](http://rust-lang.org) version is mainly a port from the
+//! [java version](https://github.com/thekrakken/java-grok)
+//! which in drew inspiration from the original
+//! [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
 #![doc(html_root_url = "https://docs.rs/grok/0.4.0")]
 extern crate onig;
 
@@ -26,34 +28,23 @@ const DEFINITION_INDEX: usize = 4;
 #[derive(Debug)]
 pub struct Matches<'a> {
     captures: Captures<'a>,
-    alias: &'a HashMap<String, String>,
     names: &'a HashMap<String, u32>,
 }
 
 impl<'a> Matches<'a> {
     /// Instantiates the matches for a pattern after the match.
-    pub fn new(
-        captures: Captures<'a>,
-        alias: &'a HashMap<String, String>,
-        names: &'a HashMap<String, u32>,
-    ) -> Self {
+    pub fn new(captures: Captures<'a>, names: &'a HashMap<String, u32>) -> Self {
         Matches {
             captures: captures,
-            alias: alias,
             names: names,
         }
     }
 
     /// Gets the value for the name (or) alias if found, `None` otherwise.
     pub fn get(&self, name_or_alias: &str) -> Option<&str> {
-        match self.alias.get(name_or_alias) {
-            Some(real) => self.captures.at(*self.names.get(real).unwrap() as usize),
-            None => {
-                match self.names.get(name_or_alias) {
-                    Some(found) => self.captures.at(*found as usize),
-                    None => None,
-                }
-            }
+        match self.names.get(name_or_alias) {
+            Some(found) => self.captures.at(*found as usize),
+            None => None,
         }
     }
 
@@ -73,25 +64,23 @@ impl<'a> Matches<'a> {
     pub fn iter(&'a self) -> MatchesIter<'a> {
         MatchesIter {
             captures: &self.captures,
-            alias: self.alias.iter(),
-            names: &self.names,
+            names: self.names.iter(),
         }
     }
 }
 
 pub struct MatchesIter<'a> {
     captures: &'a Captures<'a>,
-    alias: MapIter<'a, String, String>,
-    names: &'a HashMap<String, u32>,
+    names: MapIter<'a, String, u32>,
 }
 
 impl<'a> Iterator for MatchesIter<'a> {
     type Item = (&'a str, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.alias.next().map(|(k, v)| {
+        self.names.next().map(|(k, v)| {
             let key = k.as_str();
-            let value = match self.captures.at(*self.names.get(v).unwrap() as usize) {
+            let value = match self.captures.at(*v as usize) {
                 Some(v) => v,
                 None => "",
             };
@@ -104,7 +93,6 @@ impl<'a> Iterator for MatchesIter<'a> {
 #[derive(Debug)]
 pub struct Pattern {
     regex: Regex,
-    alias: HashMap<String, String>,
     names: HashMap<String, u32>,
 }
 
@@ -114,15 +102,17 @@ impl Pattern {
     pub fn new(regex: &str, alias: HashMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
-                let names = HashMap::from_iter(r.capture_names().map(
-                    |(name, idx)| (String::from(name), idx[0]),
-                ));
+                let names = HashMap::from_iter(r.capture_names().map(|(cap_name, cap_idx)| {
+                    let name = match alias.iter().find(|&(_k, v)| *v == cap_name) {
+                        Some(item) => item.0.clone(),
+                        None => String::from(cap_name),
+                    };
+                    (name, cap_idx[0])
+                }));
                 Pattern {
                     regex: r,
-                    alias: alias,
                     names: names,
                 }
-
             }),
             Err(_) => Err(Error::RegexCompilationFailed(regex.into())),
         }
@@ -131,7 +121,7 @@ impl Pattern {
     /// Matches this compiled `Pattern` against the text and returns the matches.
     pub fn match_against<'a>(&'a self, text: &'a str) -> Option<Matches<'a>> {
         self.regex.captures(text).map(|cap| {
-            Matches::new(cap, &self.alias, &self.names)
+            Matches::new(cap, &self.names)
         })
     }
 }
@@ -220,15 +210,17 @@ impl Grok {
                         None => return Err(Error::DefinitionNotFound(raw_pattern.into())),
                     };
 
-                    // If no alias is specified and all but with alias are ignored, the replacement
-                    // tells the regex engine to ignore the matches. Otherwise, the definition is
-                    // turned into a regex that the engine understands and uses a named group.
+                    // If no alias is specified and all but with alias are ignored,
+                    // the replacement tells the regex engine to ignore the matches.
+                    // Otherwise, the definition is turned into a regex that the
+                    // engine understands and uses a named group.
 
                     let replacement = if with_alias_only && m.at(ALIAS_INDEX).is_none() {
                         format!("(?:{})", pattern_definition)
                     } else {
-                        // If an alias is specified by the user use that one to match the name<index>
-                        // conversion, oterhwise just use the name of the pattern definition directly.
+                        // If an alias is specified by the user use that one to
+                        // match the name<index> conversion, oterhwise just use
+                        // the name of the pattern definition directly.
                         alias.insert(
                             match m.at(ALIAS_INDEX) {
                                 Some(a) => a.into(),
@@ -240,9 +232,9 @@ impl Grok {
                         format!("(?<name{}>{})", index, pattern_definition)
                     };
 
-                    // Finally, look for the original %{...} style pattern and replace it
-                    // with our replacement (only the first occurence since we are iterating
-                    // one by one).
+                    // Finally, look for the original %{...} style pattern and
+                    // replace it with our replacement (only the first occurence
+                    // since we are iterating one by one).
                     named_regex = named_regex.replacen(&format!("%{{{}}}", name), &replacement, 1);
 
                     index += 1;
@@ -562,5 +554,24 @@ mod tests {
             "No matches found!",
         );
         assert_eq!("thread1", matches.get("threadname").unwrap());
+    }
+
+    #[test]
+    fn test_adhoc_pattern_in_iter() {
+        let mut grok = Grok::default();
+        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false).expect(
+            "Error while compiling!",
+        );
+
+        let matches = pattern.match_against("[thread1]").expect(
+            "No matches found!",
+        );
+        let mut found = 0;
+        for (k, v) in matches.iter() {
+            assert_eq!("threadname", k);
+            assert_eq!("thread1", v);
+            found += 1;
+        }
+        assert_eq!(1, found);
     }
 }
