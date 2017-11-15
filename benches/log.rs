@@ -16,7 +16,7 @@ fn bench_log_match(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -32,7 +32,7 @@ fn bench_log_no_match(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -48,7 +48,7 @@ fn bench_log_match_with_anchors(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -64,7 +64,7 @@ fn bench_log_no_match_with_anchors(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });

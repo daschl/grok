@@ -15,7 +15,7 @@ fn bench_simple_pattern_match(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against("user") {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -30,7 +30,7 @@ fn bench_simple_pattern_no_match(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against("$$$$") {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -45,7 +45,7 @@ fn bench_simple_pattern_match_with_anchor(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against("user") {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -60,7 +60,7 @@ fn bench_simple_pattern_no_match_with_anchor(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against("$$$$") {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });

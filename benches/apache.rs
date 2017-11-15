@@ -16,7 +16,7 @@ fn bench_apache_log_match(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -32,7 +32,7 @@ fn bench_apache_log_no_match_start(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -48,7 +48,7 @@ fn bench_apache_log_no_match_middle(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -64,7 +64,7 @@ fn bench_apache_log_no_match_end(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -80,7 +80,7 @@ fn bench_apache_log_match_anchor(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -96,7 +96,7 @@ fn bench_apache_log_no_match_start_anchor(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -112,7 +112,7 @@ fn bench_apache_log_no_match_middle_anchor(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
@@ -128,7 +128,7 @@ fn bench_apache_log_no_match_end_anchor(b: &mut Bencher) {
 
     b.iter(|| match pattern.match_against(msg) {
         Some(found) => {
-            test::black_box(found);
+            test::black_box(&found);
         }
         None => (),
     });
