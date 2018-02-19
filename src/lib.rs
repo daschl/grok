@@ -10,7 +10,7 @@ extern crate onig;
 mod patterns;
 
 use onig::{Captures, Regex};
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::error::Error as StdError;
 use std::collections::hash_map::Iter as MapIter;
@@ -120,9 +120,9 @@ impl Pattern {
 
     /// Matches this compiled `Pattern` against the text and returns the matches.
     pub fn match_against<'a>(&'a self, text: &'a str) -> Option<Matches<'a>> {
-        self.regex.captures(text).map(|cap| {
-            Matches::new(cap, &self.names)
-        })
+        self.regex
+            .captures(text)
+            .map(|cap| Matches::new(cap, &self.names))
     }
 }
 
@@ -135,7 +135,9 @@ pub struct Grok {
 impl Grok {
     /// Creates a new `Grok` instance with no patterns.
     pub fn empty() -> Self {
-        Grok { definitions: BTreeMap::new() }
+        Grok {
+            definitions: BTreeMap::new(),
+        }
     }
 
     /// Creates a new `Grok` instance and loads all the default patterns.
@@ -202,7 +204,6 @@ impl Grok {
                 // loop through the number of matches found and apply the transformations
                 // on each of them.
                 for _ in 0..named_regex.matches(&format!("%{{{}}}", name)).count() {
-
                     // Check if we have a definition for the raw pattern key and fail quickly
                     // if not.
                     let pattern_definition = match self.definitions.get(raw_pattern) {
@@ -241,7 +242,6 @@ impl Grok {
                 }
             }
         }
-
 
         if named_regex.is_empty() {
             Err(Error::CompiledPatternIsEmpty(pattern.into()))
@@ -301,41 +301,31 @@ impl StdError for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::RecursionTooDeep => {
-                write!(
-                    f,
-                    "Recursion while compiling reached the limit of {}",
-                    MAX_RECURSION
-                )
-            }
-            Error::CompiledPatternIsEmpty(ref p) => {
-                write!(
-                    f,
-                    "The given pattern \"{}\" ended up compiling into an empty regex",
-                    p
-                )
-            }
-            Error::DefinitionNotFound(ref d) => {
-                write!(
-                    f,
-                    "The given pattern definition name \"{}\" could not be found in the definition map",
-                    d
-                )
-            }
-            Error::RegexCompilationFailed(ref r) => {
-                write!(
-                    f,
-                    "The given regex \"{}\" failed compilation in the underlying engine",
-                    r
-                )
-            }
-            Error::GenericCompilationFailure(ref d) => {
-                write!(
-                    f,
-                    "Something unexpected happened during the compilation phase: \"{}\"",
-                    d
-                )
-            }
+            Error::RecursionTooDeep => write!(
+                f,
+                "Recursion while compiling reached the limit of {}",
+                MAX_RECURSION
+            ),
+            Error::CompiledPatternIsEmpty(ref p) => write!(
+                f,
+                "The given pattern \"{}\" ended up compiling into an empty regex",
+                p
+            ),
+            Error::DefinitionNotFound(ref d) => write!(
+                f,
+                "The given pattern definition name \"{}\" could not be found in the definition map",
+                d
+            ),
+            Error::RegexCompilationFailed(ref r) => write!(
+                f,
+                "The given regex \"{}\" failed compilation in the underlying engine",
+                r
+            ),
+            Error::GenericCompilationFailure(ref d) => write!(
+                f,
+                "Something unexpected happened during the compilation phase: \"{}\"",
+                d
+            ),
             Error::__Nonexhaustive => unreachable!(),
         }
     }
@@ -350,16 +340,15 @@ mod tests {
     fn test_simple_anonymous_pattern() {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        let pattern = grok.compile("%{USERNAME}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{USERNAME}", false)
+            .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("USERNAME").unwrap());
         assert_eq!(1, matches.len());
-        let matches = pattern.match_against("john doe").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("john doe")
+            .expect("No matches found!");
         assert_eq!("john", matches.get("USERNAME").unwrap());
         assert_eq!(1, matches.len());
     }
@@ -368,16 +357,15 @@ mod tests {
     fn test_simple_named_pattern() {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        let pattern = grok.compile("%{USERNAME:usr}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{USERNAME:usr}", false)
+            .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("usr").unwrap());
         assert_eq!(1, matches.len());
-        let matches = pattern.match_against("john doe").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("john doe")
+            .expect("No matches found!");
         assert_eq!("john", matches.get("usr").unwrap());
         assert_eq!(1, matches.len());
     }
@@ -387,15 +375,14 @@ mod tests {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
-        let pattern = grok.compile("%{USER}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{USER}", false)
+            .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("USER").unwrap());
-        let matches = pattern.match_against("john doe").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("john doe")
+            .expect("No matches found!");
         assert_eq!("john", matches.get("USER").unwrap());
     }
 
@@ -404,15 +391,14 @@ mod tests {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
-        let pattern = grok.compile("%{USER:usr}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{USER:usr}", false)
+            .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
         assert_eq!("root", matches.get("usr").unwrap());
-        let matches = pattern.match_against("john doe").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("john doe")
+            .expect("No matches found!");
         assert_eq!("john", matches.get("usr").unwrap());
     }
 
@@ -423,13 +409,12 @@ mod tests {
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
         grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
-        let pattern = grok.compile("%{MAC}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{MAC}", false)
+            .expect("Error while compiling!");
 
-        let matches = pattern.match_against("5E:FF:56:A2:AF:15").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("5E:FF:56:A2:AF:15")
+            .expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("MAC").unwrap());
         assert_eq!(4, matches.len());
         let matches = pattern
@@ -445,13 +430,12 @@ mod tests {
         grok.insert_definition("YEAR", r"(\d\d){1,2}");
         grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
         grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
-        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false)
+            .expect("Error while compiling!");
 
-        let matches = pattern.match_against("Monday March 2012").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("Monday March 2012")
+            .expect("No matches found!");
         assert_eq!("Monday", matches.get("DAY").unwrap());
         assert_eq!("March", matches.get("MONTH").unwrap());
         assert_eq!("2012", matches.get("YEAR").unwrap());
@@ -465,13 +449,12 @@ mod tests {
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
         grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
-        let pattern = grok.compile("%{MAC:macaddr}", true).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{MAC:macaddr}", true)
+            .expect("Error while compiling!");
 
-        let matches = pattern.match_against("5E:FF:56:A2:AF:15").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("5E:FF:56:A2:AF:15")
+            .expect("No matches found!");
         assert_eq!("5E:FF:56:A2:AF:15", matches.get("macaddr").unwrap());
         assert_eq!(1, matches.len());
         let matches = pattern
@@ -494,9 +477,9 @@ mod tests {
             "%{DAY:day} %{MONTH:month} %{YEAR:year}%{SPACE}%{USERNAME:user}?",
             true,
         ).expect("Error while compiling!");
-        let matches = pattern.match_against("Monday March 2012").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("Monday March 2012")
+            .expect("No matches found!");
         let mut found = 0;
         for (k, v) in matches.iter() {
             match k {
@@ -514,13 +497,12 @@ mod tests {
     #[test]
     fn test_loaded_default_patterns() {
         let mut grok = Grok::with_patterns();
-        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false)
+            .expect("Error while compiling!");
 
-        let matches = pattern.match_against("Monday March 2012").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("Monday March 2012")
+            .expect("No matches found!");
         assert_eq!("Monday", matches.get("DAY").unwrap());
         assert_eq!("March", matches.get("MONTH").unwrap());
         assert_eq!("2012", matches.get("YEAR").unwrap());
@@ -535,8 +517,7 @@ mod tests {
             let pattern = format!("%{{{}}}", key);
             grok.compile(&pattern, false).expect(&format!(
                 "Pattern {} key {} failed to compile!",
-                pattern,
-                key
+                pattern, key
             ));
             num_checked += 1;
         }
@@ -546,26 +527,24 @@ mod tests {
     #[test]
     fn test_adhoc_pattern() {
         let mut grok = Grok::default();
-        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false)
+            .expect("Error while compiling!");
 
-        let matches = pattern.match_against("[thread1]").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("[thread1]")
+            .expect("No matches found!");
         assert_eq!("thread1", matches.get("threadname").unwrap());
     }
 
     #[test]
     fn test_adhoc_pattern_in_iter() {
         let mut grok = Grok::default();
-        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false).expect(
-            "Error while compiling!",
-        );
+        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false)
+            .expect("Error while compiling!");
 
-        let matches = pattern.match_against("[thread1]").expect(
-            "No matches found!",
-        );
+        let matches = pattern
+            .match_against("[thread1]")
+            .expect("No matches found!");
         let mut found = 0;
         for (k, v) in matches.iter() {
             assert_eq!("threadname", k);

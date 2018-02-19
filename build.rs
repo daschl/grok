@@ -7,14 +7,12 @@ use std::io::BufReader;
 use std::fmt;
 
 fn main() {
-
     let mut output = String::new();
 
     fmt::write(
         &mut output,
         format_args!("pub static PATTERNS: &[(&'static str, &'static str)] = &[\n"),
     ).unwrap();
-
 
     for line in glob("patterns/*.pattern").unwrap() // load filepaths
         // extract the filepath
