@@ -14,11 +14,10 @@ fn bench_apache_log_match(b: &mut Bencher) {
     let pattern = grok.compile(r#"%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -30,11 +29,10 @@ fn bench_apache_log_no_match_start(b: &mut Bencher) {
     let pattern = grok.compile(r#"%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -46,11 +44,10 @@ fn bench_apache_log_no_match_middle(b: &mut Bencher) {
     let pattern = grok.compile(r#"%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -62,11 +59,10 @@ fn bench_apache_log_no_match_end(b: &mut Bencher) {
     let pattern = grok.compile(r#"%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -78,11 +74,10 @@ fn bench_apache_log_match_anchor(b: &mut Bencher) {
     let pattern = grok.compile(r#"^%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}$"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -94,11 +89,10 @@ fn bench_apache_log_no_match_start_anchor(b: &mut Bencher) {
     let pattern = grok.compile(r#"^%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}$"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -110,11 +104,10 @@ fn bench_apache_log_no_match_middle_anchor(b: &mut Bencher) {
     let pattern = grok.compile(r#"^%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}$"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -126,10 +119,9 @@ fn bench_apache_log_no_match_end_anchor(b: &mut Bencher) {
     let pattern = grok.compile(r#"^%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{DATA:request} HTTP/%{NUMBER:httpversion}" %{NUMBER:response} %{NUMBER:bytes} %{QS:referrer} %{QS:agent}$"#, false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }

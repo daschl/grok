@@ -14,11 +14,10 @@ fn bench_log_match(b: &mut Bencher) {
     let pattern = grok.compile(r"%{TIMESTAMP_ISO8601:timestamp} \[%{IPV4:ip}:%{WORD:environment}\] %{LOGLEVEL:log_level} %{GREEDYDATA:message}", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -30,11 +29,10 @@ fn bench_log_no_match(b: &mut Bencher) {
     let pattern = grok.compile(r"%{TIMESTAMP_ISO8601:timestamp} \[%{IPV4:ip};%{WORD:environment}\] %{LOGLEVEL:log_level} %{GREEDYDATA:message}", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -46,11 +44,10 @@ fn bench_log_match_with_anchors(b: &mut Bencher) {
     let pattern = grok.compile(r"^%{TIMESTAMP_ISO8601:timestamp} \[%{IPV4:ip}:%{WORD:environment}\] %{LOGLEVEL:log_level} %{GREEDYDATA:message}$", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -62,10 +59,9 @@ fn bench_log_no_match_with_anchors(b: &mut Bencher) {
     let pattern = grok.compile(r"^%{TIMESTAMP_ISO8601:timestamp} \[%{IPV4:ip}:%{WORD:environment}\] %{LOGLEVEL:log_level} %{GREEDYDATA:message}$", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against(msg) {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against(msg) {
             test::black_box(&found);
         }
-        None => (),
     });
 }

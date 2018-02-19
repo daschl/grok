@@ -18,7 +18,7 @@ use std::iter::FromIterator;
 
 const MAX_RECURSION: usize = 1024;
 
-const GROK_PATTERN: &'static str = r"%\{(?<name>(?<pattern>[A-z0-9]+)(?::(?<alias>[A-z0-9_:;\/\s\.]+))?)(?:=(?<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
+const GROK_PATTERN: &str = r"%\{(?<name>(?<pattern>[A-z0-9]+)(?::(?<alias>[A-z0-9_:;\/\s\.]+))?)(?:=(?<definition>(?:(?:[^{}]+|\.+)+)+))?\}";
 const NAME_INDEX: usize = 1;
 const PATTERN_INDEX: usize = 2;
 const ALIAS_INDEX: usize = 3;
@@ -34,10 +34,7 @@ pub struct Matches<'a> {
 impl<'a> Matches<'a> {
     /// Instantiates the matches for a pattern after the match.
     pub fn new(captures: Captures<'a>, names: &'a HashMap<String, u32>) -> Self {
-        Matches {
-            captures: captures,
-            names: names,
-        }
+        Matches { captures, names }
     }
 
     /// Gets the value for the name (or) alias if found, `None` otherwise.
@@ -99,7 +96,7 @@ pub struct Pattern {
 impl Pattern {
     /// Creates a new pattern from a raw regex string and an alias map to identify the
     /// fields properly.
-    pub fn new(regex: &str, alias: HashMap<String, String>) -> Result<Self, Error> {
+    pub fn new(regex: &str, alias: &HashMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
                 let names = HashMap::from_iter(r.capture_names().map(|(cap_name, cap_idx)| {
@@ -170,7 +167,7 @@ impl Grok {
 
         while continue_iteration {
             continue_iteration = false;
-            if iteration_left <= 0 {
+            if iteration_left == 0 {
                 return Err(Error::RecursionTooDeep);
             }
             iteration_left -= 1;
@@ -246,7 +243,7 @@ impl Grok {
         if named_regex.is_empty() {
             Err(Error::CompiledPatternIsEmpty(pattern.into()))
         } else {
-            Pattern::new(&named_regex, alias)
+            Pattern::new(&named_regex, &alias)
         }
     }
 }

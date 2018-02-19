@@ -13,11 +13,10 @@ fn bench_simple_pattern_match(b: &mut Bencher) {
     let pattern = grok.compile("%{USERNAME}", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against("user") {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against("user") {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -28,11 +27,10 @@ fn bench_simple_pattern_no_match(b: &mut Bencher) {
     let pattern = grok.compile("%{USERNAME}", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against("$$$$") {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against("$$$$") {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -43,11 +41,10 @@ fn bench_simple_pattern_match_with_anchor(b: &mut Bencher) {
     let pattern = grok.compile("^%{USERNAME}$", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against("user") {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against("user") {
             test::black_box(&found);
         }
-        None => (),
     });
 }
 
@@ -58,10 +55,9 @@ fn bench_simple_pattern_no_match_with_anchor(b: &mut Bencher) {
     let pattern = grok.compile("^%{USERNAME}$", false)
         .expect("Error while compiling!");
 
-    b.iter(|| match pattern.match_against("$$$$") {
-        Some(found) => {
+    b.iter(|| {
+        if let Some(found) = pattern.match_against("$$$$") {
             test::black_box(&found);
         }
-        None => (),
     });
 }
