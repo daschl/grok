@@ -4,7 +4,7 @@
 //! [java version](https://github.com/thekrakken/java-grok)
 //! which in drew inspiration from the original
 //! [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
-#![doc(html_root_url = "https://docs.rs/grok/0.4.1")]
+#![doc(html_root_url = "https://docs.rs/grok/0.5.0")]
 extern crate onig;
 
 mod patterns;
