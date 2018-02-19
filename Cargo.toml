@@ -20,7 +20,7 @@ travis-ci = { repository = "daschl/grok" }
 appveyor = { repository = "daschl/grok" }
 
 [dependencies]
-onig = "2.0"
+onig = "3.1"
 
 [build-dependencies]
 glob = "0.2"
