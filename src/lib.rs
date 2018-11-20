@@ -217,7 +217,7 @@ impl Grok {
                         format!("(?:{})", pattern_definition)
                     } else {
                         // If an alias is specified by the user use that one to
-                        // match the name<index> conversion, oterhwise just use
+                        // match the name<index> conversion, otherwise just use
                         // the name of the pattern definition directly.
                         alias.insert(
                             match m.at(ALIAS_INDEX) {
@@ -231,7 +231,7 @@ impl Grok {
                     };
 
                     // Finally, look for the original %{...} style pattern and
-                    // replace it with our replacement (only the first occurence
+                    // replace it with our replacement (only the first occurrence
                     // since we are iterating one by one).
                     named_regex = named_regex.replacen(&format!("%{{{}}}", name), &replacement, 1);
 
