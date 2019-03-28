@@ -7,7 +7,7 @@
 #![doc(html_root_url = "https://docs.rs/grok/1.0.0")]
 extern crate onig;
 
-mod patterns;
+include!(concat!(env!("OUT_DIR"), "/patterns.rs"));
 
 use onig::{Captures, Regex};
 use std::collections::{BTreeMap, HashMap};
@@ -140,7 +140,7 @@ impl Grok {
     /// Creates a new `Grok` instance and loads all the default patterns.
     pub fn with_patterns() -> Self {
         let mut grok = Grok::empty();
-        for &(key, value) in patterns::PATTERNS {
+        for &(key, value) in PATTERNS {
             grok.insert_definition(String::from(key), String::from(value));
         }
         grok
@@ -510,7 +510,7 @@ mod tests {
     fn test_compilation_of_all_default_patterns() {
         let mut grok = Grok::default();
         let mut num_checked = 0;
-        for &(key, _) in patterns::PATTERNS {
+        for &(key, _) in PATTERNS {
             let pattern = format!("%{{{}}}", key);
             grok.compile(&pattern, false).expect(&format!(
                 "Pattern {} key {} failed to compile!",
