@@ -14,7 +14,6 @@ use std::collections::hash_map::Iter as MapIter;
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error as StdError;
 use std::fmt;
-use std::iter::FromIterator;
 
 const MAX_RECURSION: usize = 1024;
 
@@ -110,7 +109,7 @@ impl Pattern {
                 });
                 Pattern {
                     regex: r,
-                    names: names,
+                    names,
                 }
             }),
             Err(_) => Err(Error::RegexCompilationFailed(regex.into())),
@@ -292,7 +291,7 @@ impl StdError for Error {
         }
     }
 
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         None
     }
 }
