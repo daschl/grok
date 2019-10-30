@@ -99,13 +99,15 @@ impl Pattern {
     pub fn new(regex: &str, alias: &HashMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
-                let names = HashMap::from_iter(r.capture_names().map(|(cap_name, cap_idx)| {
+                let mut names = HashMap::new();
+                r.foreach_name(|cap_name, cap_idx| {
                     let name = match alias.iter().find(|&(_k, v)| *v == cap_name) {
                         Some(item) => item.0.clone(),
                         None => String::from(cap_name),
                     };
-                    (name, cap_idx[0])
-                }));
+                    names.insert(name, cap_idx[0]);
+                    true
+                });
                 Pattern {
                     regex: r,
                     names: names,
