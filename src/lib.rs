@@ -107,10 +107,7 @@ impl Pattern {
                     names.insert(name, cap_idx[0]);
                     true
                 });
-                Pattern {
-                    regex: r,
-                    names,
-                }
+                Pattern { regex: r, names }
             }),
             Err(_) => Err(Error::RegexCompilationFailed(regex.into())),
         }
