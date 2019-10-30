@@ -3,14 +3,15 @@
 extern crate grok;
 extern crate test;
 
-use test::Bencher;
 use grok::Grok;
+use test::Bencher;
 
 #[bench]
 fn bench_simple_pattern_match(b: &mut Bencher) {
     let mut grok = Grok::empty();
     grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-    let pattern = grok.compile("%{USERNAME}", false)
+    let pattern = grok
+        .compile("%{USERNAME}", false)
         .expect("Error while compiling!");
 
     b.iter(|| {
@@ -24,7 +25,8 @@ fn bench_simple_pattern_match(b: &mut Bencher) {
 fn bench_simple_pattern_no_match(b: &mut Bencher) {
     let mut grok = Grok::empty();
     grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-    let pattern = grok.compile("%{USERNAME}", false)
+    let pattern = grok
+        .compile("%{USERNAME}", false)
         .expect("Error while compiling!");
 
     b.iter(|| {
@@ -38,7 +40,8 @@ fn bench_simple_pattern_no_match(b: &mut Bencher) {
 fn bench_simple_pattern_match_with_anchor(b: &mut Bencher) {
     let mut grok = Grok::empty();
     grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-    let pattern = grok.compile("^%{USERNAME}$", false)
+    let pattern = grok
+        .compile("^%{USERNAME}$", false)
         .expect("Error while compiling!");
 
     b.iter(|| {
@@ -52,7 +55,8 @@ fn bench_simple_pattern_match_with_anchor(b: &mut Bencher) {
 fn bench_simple_pattern_no_match_with_anchor(b: &mut Bencher) {
     let mut grok = Grok::empty();
     grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-    let pattern = grok.compile("^%{USERNAME}$", false)
+    let pattern = grok
+        .compile("^%{USERNAME}$", false)
         .expect("Error while compiling!");
 
     b.iter(|| {
