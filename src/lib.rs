@@ -4,7 +4,7 @@
 //! [java version](https://github.com/thekrakken/java-grok)
 //! which in drew inspiration from the original
 //! [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
-#![doc(html_root_url = "https://docs.rs/grok/1.0.0")]
+#![doc(html_root_url = "https://docs.rs/grok/1.0.1")]
 extern crate onig;
 
 include!(concat!(env!("OUT_DIR"), "/patterns.rs"));

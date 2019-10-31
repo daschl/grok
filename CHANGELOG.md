@@ -4,6 +4,10 @@ All user visible changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/), as described
 for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/text/1105-api-evolution.md)
 
+## [1.0.1] - 2019-10-31
+
+ * Use `Regex::foreach_names` instead of `Regex::capture_names` to work on 32 bit platforms. Thanks @a-rodin! 
+
 ## [1.0.0] - 2019-03-28
 
  * Updated `onig` to `4.3`.
