@@ -10,7 +10,8 @@ fn main() {
     grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
 
     // Compile the definitions into the pattern you want
-    let pattern = grok.compile("%{USERNAME}", false)
+    let pattern = grok
+        .compile("%{USERNAME}", false)
         .expect("Error while compiling!");
 
     //  Match the compiled pattern against a string

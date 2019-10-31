@@ -3,8 +3,8 @@
 extern crate grok;
 extern crate test;
 
-use test::Bencher;
 use grok::Grok;
+use test::Bencher;
 
 #[bench]
 fn bench_apache_log_match(b: &mut Bencher) {

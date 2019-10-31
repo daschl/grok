@@ -10,11 +10,10 @@ extern crate onig;
 include!(concat!(env!("OUT_DIR"), "/patterns.rs"));
 
 use onig::{Captures, Regex};
-use std::collections::{BTreeMap, HashMap};
-use std::fmt;
-use std::error::Error as StdError;
 use std::collections::hash_map::Iter as MapIter;
-use std::iter::FromIterator;
+use std::collections::{BTreeMap, HashMap};
+use std::error::Error as StdError;
+use std::fmt;
 
 const MAX_RECURSION: usize = 1024;
 
@@ -108,10 +107,7 @@ impl Pattern {
                     names.insert(name, cap_idx[0]);
                     true
                 });
-                Pattern {
-                    regex: r,
-                    names: names,
-                }
+                Pattern { regex: r, names }
             }),
             Err(_) => Err(Error::RegexCompilationFailed(regex.into())),
         }
@@ -292,7 +288,7 @@ impl StdError for Error {
         }
     }
 
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         None
     }
 }
@@ -339,7 +335,8 @@ mod tests {
     fn test_simple_anonymous_pattern() {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        let pattern = grok.compile("%{USERNAME}", false)
+        let pattern = grok
+            .compile("%{USERNAME}", false)
             .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
@@ -356,7 +353,8 @@ mod tests {
     fn test_simple_named_pattern() {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        let pattern = grok.compile("%{USERNAME:usr}", false)
+        let pattern = grok
+            .compile("%{USERNAME:usr}", false)
             .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
@@ -374,7 +372,8 @@ mod tests {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
-        let pattern = grok.compile("%{USER}", false)
+        let pattern = grok
+            .compile("%{USER}", false)
             .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
@@ -390,7 +389,8 @@ mod tests {
         let mut grok = Grok::empty();
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("USER", r"%{USERNAME}");
-        let pattern = grok.compile("%{USER:usr}", false)
+        let pattern = grok
+            .compile("%{USER:usr}", false)
             .expect("Error while compiling!");
 
         let matches = pattern.match_against("root").expect("No matches found!");
@@ -408,7 +408,8 @@ mod tests {
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
         grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
-        let pattern = grok.compile("%{MAC}", false)
+        let pattern = grok
+            .compile("%{MAC}", false)
             .expect("Error while compiling!");
 
         let matches = pattern
@@ -429,7 +430,8 @@ mod tests {
         grok.insert_definition("YEAR", r"(\d\d){1,2}");
         grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
         grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
-        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false)
+        let pattern = grok
+            .compile("%{DAY} %{MONTH} %{YEAR}", false)
             .expect("Error while compiling!");
 
         let matches = pattern
@@ -448,7 +450,8 @@ mod tests {
         grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
         grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
         grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
-        let pattern = grok.compile("%{MAC:macaddr}", true)
+        let pattern = grok
+            .compile("%{MAC:macaddr}", true)
             .expect("Error while compiling!");
 
         let matches = pattern
@@ -472,10 +475,12 @@ mod tests {
         grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
         grok.insert_definition("SPACE", r"\s*");
 
-        let pattern = grok.compile(
-            "%{DAY:day} %{MONTH:month} %{YEAR:year}%{SPACE}%{USERNAME:user}?",
-            true,
-        ).expect("Error while compiling!");
+        let pattern = grok
+            .compile(
+                "%{DAY:day} %{MONTH:month} %{YEAR:year}%{SPACE}%{USERNAME:user}?",
+                true,
+            )
+            .expect("Error while compiling!");
         let matches = pattern
             .match_against("Monday March 2012")
             .expect("No matches found!");
@@ -496,7 +501,8 @@ mod tests {
     #[test]
     fn test_loaded_default_patterns() {
         let mut grok = Grok::with_patterns();
-        let pattern = grok.compile("%{DAY} %{MONTH} %{YEAR}", false)
+        let pattern = grok
+            .compile("%{DAY} %{MONTH} %{YEAR}", false)
             .expect("Error while compiling!");
 
         let matches = pattern
@@ -526,7 +532,8 @@ mod tests {
     #[test]
     fn test_adhoc_pattern() {
         let mut grok = Grok::default();
-        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false)
+        let pattern = grok
+            .compile(r"\[(?<threadname>[^\]]+)\]", false)
             .expect("Error while compiling!");
 
         let matches = pattern
@@ -538,7 +545,8 @@ mod tests {
     #[test]
     fn test_adhoc_pattern_in_iter() {
         let mut grok = Grok::default();
-        let pattern = grok.compile(r"\[(?<threadname>[^\]]+)\]", false)
+        let pattern = grok
+            .compile(r"\[(?<threadname>[^\]]+)\]", false)
             .expect("Error while compiling!");
 
         let matches = pattern
