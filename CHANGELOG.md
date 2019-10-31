@@ -4,6 +4,10 @@ All user visible changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/), as described
 for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/text/1105-api-evolution.md)
 
+## [1.0.1] - 2019-10-31
+
+ * Use `Regex::foreach_names` instead of `Regex::capture_names` to work on 32 bit platforms. Thanks @a-rodin! 
+
 ## [1.1.0] - 2019-10-30
 
  * Updated `onig` to `5.0`.
@@ -42,6 +46,7 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 
  * Initial Release
 
+[1.0.1]: https://github.com/daschl/grok/compare/v1.0.0...v1.0.1
 [1.1.0]: https://github.com/daschl/grok/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/daschl/grok/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/daschl/grok/compare/v0.4.1...v0.5.0
