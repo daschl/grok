@@ -23,6 +23,11 @@ const PATTERN_INDEX: usize = 2;
 const ALIAS_INDEX: usize = 3;
 const DEFINITION_INDEX: usize = 4;
 
+/// Return the default patterns.
+pub fn patterns<'a>() -> &'a [(&'a str, &'a str)] {
+    PATTERNS
+}
+
 /// The `Matches` represent matched results from a `Pattern` against text.
 #[derive(Debug)]
 pub struct Matches<'a> {
