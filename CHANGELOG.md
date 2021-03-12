@@ -8,6 +8,7 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 
  + Updated `onig` to `6.1`.
  * Allow to inspect the default built patterns. Thanks @magodo!
+ * Use the non_exhaustive attribute on `Error` as suggested by clippy.
 
 ## [1.0.1] - 2019-10-31
 
