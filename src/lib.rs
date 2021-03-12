@@ -81,10 +81,7 @@ impl<'a> Iterator for MatchesIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.names.next().map(|(k, v)| {
             let key = k.as_str();
-            let value = match self.captures.at(*v as usize) {
-                Some(v) => v,
-                None => "",
-            };
+            let value = self.captures.at(*v as usize).unwrap_or("");
             (key, value)
         })
     }
@@ -259,6 +256,7 @@ impl Default for Grok {
 
 /// An error that occurred when using this library.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     /// The recursion while compiling has exhausted the limit.
     RecursionTooDeep,
@@ -270,13 +268,6 @@ pub enum Error {
     RegexCompilationFailed(String),
     /// Something is messed up during the compilation phase.
     GenericCompilationFailure(String),
-    /// Hints that destructuring should not be exhaustive.
-    ///
-    /// This enum may grow additional variants, so this makes sure clients
-    /// don't count on exhaustive matching. (Otherwise, adding a new variant
-    /// could break existing code.)
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl StdError for Error {
@@ -289,7 +280,6 @@ impl StdError for Error {
             Error::GenericCompilationFailure(_) => {
                 "something happened during the compilation phase"
             }
-            Error::__Nonexhaustive => unreachable!(),
         }
     }
 
@@ -326,7 +316,6 @@ impl fmt::Display for Error {
                 "Something unexpected happened during the compilation phase: \"{}\"",
                 d
             ),
-            Error::__Nonexhaustive => unreachable!(),
         }
     }
 }
