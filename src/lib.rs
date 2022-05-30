@@ -485,7 +485,7 @@ mod tests {
                 "month" => assert_eq!("March", v),
                 "year" => assert_eq!("2012", v),
                 "user" => assert_eq!("", v), // <- optional
-                e => panic!(format!("{:?}", e)),
+                e => panic!("{:?}", e),
             }
             found += 1;
         }
