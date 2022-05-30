@@ -4,9 +4,14 @@ All user visible changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/), as described
 for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/text/1105-api-evolution.md)
 
+## In Progress (2.0.0)
+
+ * Updated `onig` to `6.3`.
+ * Switched rust edition to 2021.
+
 ## [1.2.0] - 2021-03-21
 
- + Updated `onig` to `6.1`.
+ * Updated `onig` to `6.1`.
  * Allow to inspect the default built patterns. Thanks @magodo!
  * Use the non_exhaustive attribute on `Error` as suggested by clippy.
 
