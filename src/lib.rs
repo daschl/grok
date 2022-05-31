@@ -37,7 +37,7 @@ pub struct Matches<'a> {
 
 impl<'a> Matches<'a> {
     /// Instantiates the matches for a pattern after the match.
-    pub fn new(captures: Captures<'a>, names: &'a HashMap<String, u32>) -> Self {
+    fn new(captures: Captures<'a>, names: &'a HashMap<String, u32>) -> Self {
         Matches { captures, names }
     }
 
