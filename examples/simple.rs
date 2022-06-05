@@ -6,8 +6,8 @@ fn main() {
     // Instantiate Grok
     let mut grok = Grok::default();
 
-    // Insert a definition which might be a regex or an alias
-    grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
+    // Add a pattern which might be a regex or an alias
+    grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
 
     // Compile the definitions into the pattern you want
     let pattern = grok

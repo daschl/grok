@@ -42,7 +42,7 @@ fn main() {
     fmt::write(&mut output, format_args!("];\n")).unwrap();
 
     let out_dir = env::var("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("patterns.rs");
+    let dest_path = Path::new(&out_dir).join("default_patterns.rs");
     let mut file = File::create(&dest_path).unwrap();
     file.write_all(output.as_bytes()).unwrap();
 }

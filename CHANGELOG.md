@@ -9,6 +9,8 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
  * Updated `onig` to `6.3`.
  * Switched rust edition to 2021.
  * `master` branch is now called `main`.
+ * Rename `Grok::with_patterns()` to `Grok::with_default_patterns()`.
+ * Rename `Grok::insert_definition` to `Grok::add_pattern` to stop mixing "definition" with "pattern".
 
 ## [1.2.0] - 2021-03-21
 

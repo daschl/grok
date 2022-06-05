@@ -5,9 +5,8 @@
 //! which in drew inspiration from the original
 //! [ruby version](https://github.com/logstash-plugins/logstash-filter-grok).
 #![doc(html_root_url = "https://docs.rs/grok/2.0.0")]
-extern crate onig;
 
-include!(concat!(env!("OUT_DIR"), "/patterns.rs"));
+include!(concat!(env!("OUT_DIR"), "/default_patterns.rs"));
 
 use onig::{Captures, Regex};
 use std::collections::hash_map::Iter as MapIter;
@@ -126,29 +125,29 @@ impl Pattern {
 /// The basic structure to manage patterns, entry point for common usage.
 #[derive(Debug)]
 pub struct Grok {
-    definitions: BTreeMap<String, String>,
+    patterns: BTreeMap<String, String>,
 }
 
 impl Grok {
     /// Creates a new `Grok` instance with no patterns.
     pub fn empty() -> Self {
         Grok {
-            definitions: BTreeMap::new(),
+            patterns: BTreeMap::new(),
         }
     }
 
     /// Creates a new `Grok` instance and loads all the default patterns.
-    pub fn with_patterns() -> Self {
+    pub fn with_default_patterns() -> Self {
         let mut grok = Grok::empty();
         for &(key, value) in PATTERNS {
-            grok.insert_definition(String::from(key), String::from(value));
+            grok.add_pattern(String::from(key), String::from(value));
         }
         grok
     }
 
-    /// Inserts a custom pattern.
-    pub fn insert_definition<S: Into<String>>(&mut self, name: S, pattern: S) {
-        self.definitions.insert(name.into(), pattern.into());
+    /// Adds a custom pattern.
+    pub fn add_pattern<S: Into<String>>(&mut self, name: S, pattern: S) {
+        self.patterns.insert(name.into(), pattern.into());
     }
 
     /// Compiles the given pattern, making it ready for matching.
@@ -193,7 +192,7 @@ impl Grok {
                 };
 
                 if let Some(definition) = m.at(DEFINITION_INDEX) {
-                    self.insert_definition(raw_pattern, definition);
+                    self.add_pattern(raw_pattern, definition);
                     name = format!("{}={}", name, definition);
                 }
 
@@ -203,7 +202,7 @@ impl Grok {
                 for _ in 0..named_regex.matches(&format!("%{{{}}}", name)).count() {
                     // Check if we have a definition for the raw pattern key and fail quickly
                     // if not.
-                    let pattern_definition = match self.definitions.get(raw_pattern) {
+                    let pattern_definition = match self.patterns.get(raw_pattern) {
                         Some(d) => d,
                         None => return Err(Error::DefinitionNotFound(raw_pattern.into())),
                     };
@@ -248,9 +247,27 @@ impl Grok {
     }
 }
 
+/// The Default implementation for Grok whuich will load the default patterns.
 impl Default for Grok {
     fn default() -> Grok {
-        Grok::with_patterns()
+        Grok::with_default_patterns()
+    }
+}
+
+/// Allows to initialize Grok with an iterator of patterns.
+///
+/// Example:
+/// ```rs
+/// let patterns = [("USERNAME", r"[a-zA-Z0-9._-]+")];
+/// let mut grok = Grok::from_iter(patterns.into_iter());
+/// ```
+impl<S: Into<String>> FromIterator<(S, S)> for Grok {
+    fn from_iter<I: IntoIterator<Item = (S, S)>>(iter: I) -> Self {
+        let mut grok = Grok::empty();
+        for (k, v) in iter {
+            grok.add_pattern(k, v);
+        }
+        grok
     }
 }
 
@@ -328,7 +345,25 @@ mod tests {
     #[test]
     fn test_simple_anonymous_pattern() {
         let mut grok = Grok::empty();
-        grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
+        let pattern = grok
+            .compile("%{USERNAME}", false)
+            .expect("Error while compiling!");
+
+        let matches = pattern.match_against("root").expect("No matches found!");
+        assert_eq!("root", matches.get("USERNAME").unwrap());
+        assert_eq!(1, matches.len());
+        let matches = pattern
+            .match_against("john doe")
+            .expect("No matches found!");
+        assert_eq!("john", matches.get("USERNAME").unwrap());
+        assert_eq!(1, matches.len());
+    }
+
+    #[test]
+    fn test_from_iter() {
+        let patterns = [("USERNAME", r"[a-zA-Z0-9._-]+")];
+        let mut grok = Grok::from_iter(patterns.into_iter());
         let pattern = grok
             .compile("%{USERNAME}", false)
             .expect("Error while compiling!");
@@ -346,7 +381,7 @@ mod tests {
     #[test]
     fn test_simple_named_pattern() {
         let mut grok = Grok::empty();
-        grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
         let pattern = grok
             .compile("%{USERNAME:usr}", false)
             .expect("Error while compiling!");
@@ -364,8 +399,8 @@ mod tests {
     #[test]
     fn test_alias_anonymous_pattern() {
         let mut grok = Grok::empty();
-        grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        grok.insert_definition("USER", r"%{USERNAME}");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("USER", r"%{USERNAME}");
         let pattern = grok
             .compile("%{USER}", false)
             .expect("Error while compiling!");
@@ -381,8 +416,8 @@ mod tests {
     #[test]
     fn test_ailas_named_pattern() {
         let mut grok = Grok::empty();
-        grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        grok.insert_definition("USER", r"%{USERNAME}");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("USER", r"%{USERNAME}");
         let pattern = grok
             .compile("%{USER:usr}", false)
             .expect("Error while compiling!");
@@ -398,10 +433,10 @@ mod tests {
     #[test]
     fn test_composite_or_pattern() {
         let mut grok = Grok::empty();
-        grok.insert_definition("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
-        grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
-        grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
-        grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
+        grok.add_pattern("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
+        grok.add_pattern("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
+        grok.add_pattern("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
+        grok.add_pattern("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
         let pattern = grok
             .compile("%{MAC}", false)
             .expect("Error while compiling!");
@@ -421,9 +456,9 @@ mod tests {
     #[test]
     fn test_multiple_patterns() {
         let mut grok = Grok::empty();
-        grok.insert_definition("YEAR", r"(\d\d){1,2}");
-        grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
-        grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
+        grok.add_pattern("YEAR", r"(\d\d){1,2}");
+        grok.add_pattern("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
+        grok.add_pattern("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
         let pattern = grok
             .compile("%{DAY} %{MONTH} %{YEAR}", false)
             .expect("Error while compiling!");
@@ -440,10 +475,10 @@ mod tests {
     #[test]
     fn test_with_alias_only() {
         let mut grok = Grok::empty();
-        grok.insert_definition("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
-        grok.insert_definition("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
-        grok.insert_definition("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
-        grok.insert_definition("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
+        grok.add_pattern("MAC", r"(?:%{CISCOMAC}|%{WINDOWSMAC}|%{COMMONMAC})");
+        grok.add_pattern("CISCOMAC", r"(?:(?:[A-Fa-f0-9]{4}\.){2}[A-Fa-f0-9]{4})");
+        grok.add_pattern("WINDOWSMAC", r"(?:(?:[A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2})");
+        grok.add_pattern("COMMONMAC", r"(?:(?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2})");
         let pattern = grok
             .compile("%{MAC:macaddr}", true)
             .expect("Error while compiling!");
@@ -463,11 +498,11 @@ mod tests {
     #[test]
     fn test_match_iterator() {
         let mut grok = Grok::empty();
-        grok.insert_definition("YEAR", r"(\d\d){1,2}");
-        grok.insert_definition("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
-        grok.insert_definition("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
-        grok.insert_definition("USERNAME", r"[a-zA-Z0-9._-]+");
-        grok.insert_definition("SPACE", r"\s*");
+        grok.add_pattern("YEAR", r"(\d\d){1,2}");
+        grok.add_pattern("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
+        grok.add_pattern("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("SPACE", r"\s*");
 
         let pattern = grok
             .compile(
@@ -494,7 +529,7 @@ mod tests {
 
     #[test]
     fn test_loaded_default_patterns() {
-        let mut grok = Grok::with_patterns();
+        let mut grok = Grok::with_default_patterns();
         let pattern = grok
             .compile("%{DAY} %{MONTH} %{YEAR}", false)
             .expect("Error while compiling!");
