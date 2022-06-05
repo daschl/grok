@@ -271,6 +271,18 @@ impl<S: Into<String>> FromIterator<(S, S)> for Grok {
     }
 }
 
+/// Allows to construct Grok with an array of patterns directly.
+///
+/// Example:
+/// ```rs
+/// let mut grok = Grok::from([("USERNAME", r"[a-zA-Z0-9._-]+")]);
+/// ```
+impl<S: Into<String>, const N: usize> From<[(S, S); N]> for Grok {
+    fn from(arr: [(S, S); N]) -> Self {
+        Self::from_iter(arr)
+    }
+}
+
 /// An error that occurred when using this library.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
@@ -364,6 +376,23 @@ mod tests {
     fn test_from_iter() {
         let patterns = [("USERNAME", r"[a-zA-Z0-9._-]+")];
         let mut grok = Grok::from_iter(patterns.into_iter());
+        let pattern = grok
+            .compile("%{USERNAME}", false)
+            .expect("Error while compiling!");
+
+        let matches = pattern.match_against("root").expect("No matches found!");
+        assert_eq!("root", matches.get("USERNAME").unwrap());
+        assert_eq!(1, matches.len());
+        let matches = pattern
+            .match_against("john doe")
+            .expect("No matches found!");
+        assert_eq!("john", matches.get("USERNAME").unwrap());
+        assert_eq!(1, matches.len());
+    }
+
+    #[test]
+    fn test_from() {
+        let mut grok = Grok::from([("USERNAME", r"[a-zA-Z0-9._-]+")]);
         let pattern = grok
             .compile("%{USERNAME}", false)
             .expect("Error while compiling!");
