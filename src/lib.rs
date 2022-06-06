@@ -69,6 +69,15 @@ impl<'a> Matches<'a> {
     }
 }
 
+impl<'a> IntoIterator for &'a Matches<'a> {
+    type Item = (&'a str, &'a str);
+    type IntoIter = MatchesIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 pub struct MatchesIter<'a> {
     captures: &'a Captures<'a>,
     names: MapIter<'a, String, u32>,
@@ -544,6 +553,38 @@ mod tests {
             .expect("No matches found!");
         let mut found = 0;
         for (k, v) in matches.iter() {
+            match k {
+                "day" => assert_eq!("Monday", v),
+                "month" => assert_eq!("March", v),
+                "year" => assert_eq!("2012", v),
+                "user" => assert_eq!("", v), // <- optional
+                e => panic!("{:?}", e),
+            }
+            found += 1;
+        }
+        assert_eq!(4, found);
+    }
+
+    #[test]
+    fn test_matches_into_iter() {
+        let mut grok = Grok::empty();
+        grok.add_pattern("YEAR", r"(\d\d){1,2}");
+        grok.add_pattern("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
+        grok.add_pattern("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("SPACE", r"\s*");
+
+        let pattern = grok
+            .compile(
+                "%{DAY:day} %{MONTH:month} %{YEAR:year}%{SPACE}%{USERNAME:user}?",
+                true,
+            )
+            .expect("Error while compiling!");
+        let matches = pattern
+            .match_against("Monday March 2012")
+            .expect("No matches found!");
+        let mut found = 0;
+        for (k, v) in &matches {
             match k {
                 "day" => assert_eq!("Monday", v),
                 "month" => assert_eq!("March", v),
