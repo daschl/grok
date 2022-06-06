@@ -9,7 +9,7 @@
 include!(concat!(env!("OUT_DIR"), "/default_patterns.rs"));
 
 use onig::{Captures, Regex};
-use std::collections::hash_map::Iter as MapIter;
+use std::collections::btree_map::Iter as MapIter;
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error as StdError;
 use std::fmt;
@@ -31,12 +31,12 @@ pub fn patterns<'a>() -> &'a [(&'a str, &'a str)] {
 #[derive(Debug)]
 pub struct Matches<'a> {
     captures: Captures<'a>,
-    names: &'a HashMap<String, u32>,
+    names: &'a BTreeMap<String, u32>,
 }
 
 impl<'a> Matches<'a> {
     /// Instantiates the matches for a pattern after the match.
-    fn new(captures: Captures<'a>, names: &'a HashMap<String, u32>) -> Self {
+    fn new(captures: Captures<'a>, names: &'a BTreeMap<String, u32>) -> Self {
         Matches { captures, names }
     }
 
@@ -99,7 +99,7 @@ impl<'a> Iterator for MatchesIter<'a> {
 #[derive(Debug)]
 pub struct Pattern {
     regex: Regex,
-    names: HashMap<String, u32>,
+    names: BTreeMap<String, u32>,
 }
 
 impl Pattern {
@@ -108,7 +108,7 @@ impl Pattern {
     pub fn new(regex: &str, alias: &HashMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
-                let mut names = HashMap::new();
+                let mut names = BTreeMap::new();
                 r.foreach_name(|cap_name, cap_idx| {
                     let name = match alias.iter().find(|&(_k, v)| *v == cap_name) {
                         Some(item) => item.0.clone(),
