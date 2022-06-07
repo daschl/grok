@@ -12,31 +12,24 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-grok = "1.2"
-```
-
-and this to your crate root:
-
-```rust
-extern crate grok;
+grok = "2.0"
 ```
 
 Here is a simple example which stores a pattern, compiles it and then matches a line on it:
 
 ```rust
-extern crate grok;
-
 use grok::Grok;
 
 fn main() {
     // Instantiate Grok
     let mut grok = Grok::default();
 
-    // Add a custom pattern which might be a regex or an alias
+    // Add a pattern which might be a regex or an alias
     grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
 
     // Compile the definitions into the pattern you want
-    let pattern = grok.compile("%{USERNAME}", false)
+    let pattern = grok
+        .compile("%{USERNAME}", false)
         .expect("Error while compiling!");
 
     //  Match the compiled pattern against a string

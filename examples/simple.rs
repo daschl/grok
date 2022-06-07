@@ -1,5 +1,3 @@
-extern crate grok;
-
 use grok::Grok;
 
 fn main() {
