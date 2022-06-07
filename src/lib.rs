@@ -87,11 +87,16 @@ impl<'a> Iterator for MatchesIter<'a> {
     type Item = (&'a str, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.names.next().map(|(k, v)| {
-            let key = k.as_str();
-            let value = self.captures.at(*v as usize).unwrap_or("");
-            (key, value)
-        })
+        //while let Some((k, v)) = self.names.next() {
+        for (k, v) in self.names.by_ref() {
+            match self.captures.at(*v as usize) {
+                Some(value) => return Some((k.as_str(), value)),
+                None => {
+                    continue;
+                }
+            }
+        }
+        None
     }
 }
 
@@ -557,12 +562,11 @@ mod tests {
                 "day" => assert_eq!("Monday", v),
                 "month" => assert_eq!("March", v),
                 "year" => assert_eq!("2012", v),
-                "user" => assert_eq!("", v), // <- optional
                 e => panic!("{:?}", e),
             }
             found += 1;
         }
-        assert_eq!(4, found);
+        assert_eq!(3, found);
     }
 
     #[test]
@@ -589,12 +593,11 @@ mod tests {
                 "day" => assert_eq!("Monday", v),
                 "month" => assert_eq!("March", v),
                 "year" => assert_eq!("2012", v),
-                "user" => assert_eq!("", v), // <- optional
                 e => panic!("{:?}", e),
             }
             found += 1;
         }
-        assert_eq!(4, found);
+        assert_eq!(3, found);
     }
 
     #[test]
