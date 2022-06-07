@@ -27,11 +27,11 @@ fn main() {
         .flat_map(|f| BufReader::new(f).lines())
         .map(|line| line.unwrap())
         // filter comments
-        .filter(|line| !line.starts_with("#"))
+        .filter(|line| !line.starts_with('#'))
         // filter empty lines
         .filter(|line| !line.is_empty())
     {
-        let (key, value) = line.split_at(line.find(" ").unwrap());
+        let (key, value) = line.split_at(line.find(' ').unwrap());
         fmt::write(
             &mut output,
             format_args!("\t(\"{}\", r#\"{}\"#),\n", key, &value[1..]),

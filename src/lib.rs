@@ -135,8 +135,8 @@ impl Pattern {
             .map(|cap| Matches::new(cap, &self.names))
     }
 
-    /// Returns all names this Pattern captures.
-    pub fn capture_names<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+    /// Returns all names this `Pattern` captures.
+    pub fn capture_names(&self) -> impl Iterator<Item = &str> {
         self.names.keys().map(|s| s.as_str())
     }
 }
