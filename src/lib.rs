@@ -22,12 +22,12 @@ const PATTERN_INDEX: usize = 2;
 const ALIAS_INDEX: usize = 3;
 const DEFINITION_INDEX: usize = 4;
 
-/// Return the default patterns.
+/// Returns the default patterns, also used by the default constructor of `Grok`.
 pub fn patterns<'a>() -> &'a [(&'a str, &'a str)] {
     PATTERNS
 }
 
-/// The `Matches` represent matched results from a `Pattern` against text.
+/// The `Matches` represent matched results from a `Pattern` against a provided text.
 #[derive(Debug)]
 pub struct Matches<'a> {
     captures: Captures<'a>,
@@ -78,6 +78,7 @@ impl<'a> IntoIterator for &'a Matches<'a> {
     }
 }
 
+/// An `Iterator` over all matches, accessible via `Matches`.
 pub struct MatchesIter<'a> {
     captures: &'a Captures<'a>,
     names: MapIter<'a, String, u32>,
@@ -141,7 +142,7 @@ impl Pattern {
     }
 }
 
-/// The basic structure to manage patterns, entry point for common usage.
+/// The `Grok` struct is the main entry point into using this library.
 #[derive(Debug)]
 pub struct Grok {
     patterns: BTreeMap<String, String>,
@@ -302,7 +303,7 @@ impl<S: Into<String>, const N: usize> From<[(S, S); N]> for Grok {
     }
 }
 
-/// An error that occurred when using this library.
+/// Errors that can occur when using this library.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Error {
