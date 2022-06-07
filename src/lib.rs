@@ -110,7 +110,7 @@ pub struct Pattern {
 impl Pattern {
     /// Creates a new pattern from a raw regex string and an alias map to identify the
     /// fields properly.
-    pub fn new(regex: &str, alias: &HashMap<String, String>) -> Result<Self, Error> {
+    fn new(regex: &str, alias: &HashMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
                 let mut names = BTreeMap::new();
@@ -133,6 +133,11 @@ impl Pattern {
         self.regex
             .captures(text)
             .map(|cap| Matches::new(cap, &self.names))
+    }
+
+    /// Returns all names this Pattern captures.
+    pub fn capture_names<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+        self.names.keys().map(|s| s.as_str())
     }
 }
 
@@ -661,5 +666,23 @@ mod tests {
             found += 1;
         }
         assert_eq!(1, found);
+    }
+
+    #[test]
+    fn test_capture_names() {
+        let mut grok = Grok::empty();
+        grok.add_pattern("YEAR", r"(\d\d){1,2}");
+        grok.add_pattern("MONTH", r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b");
+        grok.add_pattern("DAY", r"(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)");
+        grok.add_pattern("USERNAME", r"[a-zA-Z0-9._-]+");
+        grok.add_pattern("SPACE", r"\s*");
+
+        let pattern = grok
+            .compile("%{YEAR}%{SPACE}%{USERNAME:user}?", false)
+            .expect("Error while compiling!");
+
+        let expected = vec!["SPACE", "YEAR", "user"];
+        let actual = pattern.capture_names().collect::<Vec<_>>();
+        assert_eq!(expected, actual);
     }
 }
