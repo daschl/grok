@@ -17,10 +17,6 @@ build = "build.rs"
 edition = "2021"
 rust-version = "1.56"
 
-[badges]
-travis-ci = { repository = "daschl/grok" }
-appveyor = { repository = "daschl/grok" }
-
 [dependencies]
 onig = { version = "6.3", default-features = false }
 
