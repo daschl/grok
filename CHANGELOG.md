@@ -7,12 +7,13 @@ for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/
 ## In Progress (2.0.0)
 
  * Minimum Rust version is `1.56`, Rust Edition switched to 2021.
- * (breaking) Rename `Grok::with_patterns()` to `Grok::with_default_patterns()`.
- * (breaking) Rename `Grok::insert_definition` to `Grok::add_pattern` to stop mixing "definition" with "pattern".
+ * (breaking) Renamed `Grok::with_patterns()` to `Grok::with_default_patterns()`.
+ * (breaking) Renamed `Grok::insert_definition` to `Grok::add_pattern` to stop mixing "definition" with "pattern".
  * (breaking) `Matches::iter()` is now only returning the matches and not also the other patters with an empty string as the value.
+ * Added `IntoIter` for `&Matches` for more convenient match iteration (i.e. for loop).
+ * Added `Pattern::capture_names` which returns the names the compiled pattern captures.
  * Updated `onig` to `6.3`.
  * `master` branch is now called `main`.
- * Add `IntoIter` for `&Matches` for more convenient match iteration (i.e. for loop).
 
 ## [1.2.0] - 2021-03-21
 
