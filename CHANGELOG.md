@@ -4,6 +4,10 @@ All user visible changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/), as described
 for Rust libraries in [RFC #1105](https://github.com/rust-lang/rfcs/blob/master/text/1105-api-evolution.md)
 
+## 2.0.1 - Unreleased
+
+ * Updated `onig` to `6.4`.
+
 ## 2.0.0 - 2022-06-07
 
  * Minimum Rust version is `1.56`, Rust Edition switched to 2021.
