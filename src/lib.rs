@@ -304,7 +304,7 @@ impl<S: Into<String>, const N: usize> From<[(S, S); N]> for Grok {
 }
 
 /// Errors that can occur when using this library.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum Error {
     /// The recursion while compiling has exhausted the limit.
